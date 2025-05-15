@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Geri Dönüşüm Ayırma Oyunu</title>
+  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Comic Neue', cursive;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: linear-gradient(180deg, #87CEEB, #FFD700);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      overflow-y: auto;
+      position: relative;
+    }
+    .container {
+      text-align: center;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      max-width: 600px;
+      width: 90%;
+      z-index: 10;
+    }
+    h1 {
+      color: #FF4500;
+      font-size: 2.5em;
+      margin: 10px 0;
+      text-shadow: 2px 2px #FFD700;
+    }
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      margin: 20px 0;
+    }
+    button {
+      padding: 15px 25px;
+      font-size: 1.2em;
+      font-family: 'Comic Neue', cursive;
+      cursor: pointer;
+      background: linear-gradient(45deg, #32CD32, #98FB98);
+      color: #fff;
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s, background 0.3s;
+    }
+    button:hover {
+      transform: scale(1.1);
+      background: linear-gradient(45deg, #228B22, #90EE90);
+    }
+    button:active {
+      transform: scale(0.95);
+    }
+    #symbolArea {
+      font-size: 80px;
+      margin: 30px 0;
+      min-height: 100px;
+      background: #FFFACD;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+      position: relative;
+      animation: slideIn 0.5s ease-out;
+    }
+    #symbolArea:hover .tooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+    .tooltip {
+      visibility: hidden;
+      background: #4682B4;
+      color: #fff;
+      font-size: 0.9em;
+      padding: 8px;
+      border-radius: 8px;
+      position: absolute;
+      top: -50px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 20;
+    }
+    #feedback {
+      position: absolute;
+      font-size: 60px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      transition: opacity 0.5s;
+      z-index: 15;
+    }
+    #scoreBoard {
+      font-size: 1.8em;
+      color: #4682B4;
+      margin: 15px 0;
+      text-shadow: 1px 1px #FFF;
+    }
+    #progressBarContainer {
+      width: 80%;
+      height: 20px;
+      background: #ccc;
+      border-radius: 10px;
+      margin: 10px auto;
+      overflow: hidden;
+    }
+    #progressBar {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #FF69B4, #FFD700);
+      transition: width 1s linear;
+    }
+    .exit-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 25px;
+      background: linear-gradient(45deg, #FF6347, #FFA07A);
+      color: #fff;
+      font-family: 'Comic Neue', cursive;
+      font-size: 1.2em;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s;
+      z-index: 100;
+    }
+    .exit-btn:hover {
+      transform: scale(1.1);
+      background: linear-gradient(45deg, #FF4500, #FF8C00);
+    }
+    .exit-btn:active {
+      transform: scale(0.95);
+    }
+    #gameOver {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #FFFACD;
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+      z-index: 200;
+    }
+    #gameOver h2 {
+      color: #FF4500;
+      font-size: 2em;
+      margin: 10px 0;
+    }
+    #gameOver p {
+      font-size: 1.5em;
+      color: #4682B4;
+    }
+    #gameOver button {
+      margin-top: 20px;
+      background: linear-gradient(45deg, #1E90FF, #87CEFA);
+    }
+    #gameOver button:hover {
+      background: linear-gradient(45deg, #4682B4, #B0E0E6);
+    }
+    .cloud {
+      position: absolute;
+      font-size: 40px;
+      opacity: 0.5;
+      animation: drift 20s linear infinite;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(-100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes drift {
+      from { transform: translateX(-100vw); }
+      to { transform: translateX(100vw); }
+    }
+    @keyframes confetti {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+    }
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background: #FF69B4;
+      z-index: 50;
+      animation: confetti 2s ease-out forwards;
+    }
+    @media (max-width: 500px) {
+      h1 { font-size: 1.8em; }
+      button { font-size: 1em; padding: 10px 20px; }
+      #symbolArea { font-size: 60px; }
+      #scoreBoard { font-size: 1.5em; }
+      #gameOver { width: 80%; }
+      #gameOver h2 { font-size: 1.5em; }
+      #gameOver p { font-size: 1.2em; }
+    }
+  </style>
+</head>
+<body>
+  
+  <button class="exit-btn" onclick="exitGame()">Çıkış</button>
+  <div class="container">
+    <h1>Geri Dönüşüm Ayırma Oyunu</h1>
+    <div id="progressBarContainer"><div id="progressBar"></div></div>
+    <div id="symbolArea"><span class="tooltip"></span></div>
+    <div id="feedback"></div>
+    <div class="buttons">
+      <button onclick="sortItem('Plastik')">♻️ Plastik</button>
+      <button onclick="sortItem('Organik')">♻️ Organik</button>
+      <button onclick="sortItem('Cam')">♻️ Cam</button>
+      <button onclick="sortItem('Kağıt')">♻️ Kağıt</button>
+      <button onclick="sortItem('Metal')">♻️ Metal</button>
+    </div>
+    <div id="scoreBoard">Skor: 0 | Rekor: 0</div>
+  </div>
+  <div id="gameOver">
+    <h2>Oyun Bitti!</h2>
+    <p id="finalScore">Skor: 0</p>
+    <p id="stars">Yıldız: ⭐</p>
+    <button onclick="playAgain()">Tekrar Oyna</button>
+  </div>
+
+  <script>
+    // Define 50 symbols with categories and descriptions
+    const symbols = [
+      { symbol: '🧴', category: 'Plastik', desc: 'Şampuan şişesi, plastik geri dönüştürülebilir.' },
+      { symbol: '🥤', category: 'Plastik', desc: 'Plastik bardak, geri dönüşüm kutusuna!' },
+      { symbol: '🛍️', category: 'Plastik', desc: 'Plastik poşet, geri dönüştürülebilir.' },
+      { symbol: '🍶', category: 'Plastik', desc: 'Plastik kap, temizlenip geri dönüştürülür.' },
+      { symbol: '🧼', category: 'Plastik', desc: 'Sabunluk, plastik geri dönüşüm için uygun.' },
+      { symbol: '🍎', category: 'Organik', desc: 'Elma, kompost için organik atık.' },
+      { symbol: '🍌', category: 'Organik', desc: 'Muz kabuğu, organik atık kutusuna.' },
+      { symbol: '🥕', category: 'Organik', desc: 'Havuç kabuğu, kompost için ideal.' },
+      { symbol: '🥬', category: 'Organik', desc: 'Marul, organik atık olarak ayrılır.' },
+      { symbol: '🍉', category: 'Organik', desc: 'Karpuz kabuğu, organik atıktır.' },
+      { symbol: '🍷', category: 'Cam', desc: 'Şarap şişesi, cam geri dönüşüm kutusuna.' },
+      { symbol: '🥃', category: 'Cam', desc: 'Cam bardak, geri dönüştürülebilir.' },
+      { symbol: '🧊', category: 'Cam', desc: 'Cam süs, cam kutusuna atılır.' },
+      { symbol: '🍺', category: 'Cam', desc: 'Bira şişesi, cam geri dönüşüm için.' },
+      { symbol: '🫙', category: 'Cam', desc: 'Kavanoz, cam geri dönüşüm kutusuna.' },
+      { symbol: '📄', category: 'Kağıt', desc: 'Kağıt, geri dönüştürülebilir.' },
+      { symbol: '📰', category: 'Kağıt', desc: 'Gazete, kağıt geri dönüşüm kutusuna.' },
+      { symbol: '📚', category: 'Kağıt', desc: 'Kitap, kağıt olarak geri dönüştürülür.' },
+      { symbol: '🧻', category: 'Kağıt', desc: 'Tuvalet kağıdı rulosu, kağıt atık.' },
+      { symbol: '📜', category: 'Kağıt', desc: 'Parşömen, kağıt geri dönüşüm için.' },
+      { symbol: '🥫', category: 'Metal', desc: 'Konserve kutusu, metal geri dönüşüm.' },
+      { symbol: '🔧', category: 'Metal', desc: 'Anahtar, metal atık olarak ayrılır.' },
+      { symbol: '🛠️', category: 'Metal', desc: 'Alet, metal geri dönüşüm kutusuna.' },
+      { symbol: '⚙️', category: 'Metal', desc: 'Dişli, metal olarak geri dönüştürülür.' },
+      { symbol: '🔨', category: 'Metal', desc: 'Çekiç, metal geri dönüşüm için.' },
+      { symbol: '♻️', category: 'Plastik', desc: 'Geri dönüşüm sembolü, plastik atık.' },
+      { symbol: '🧃', category: 'Plastik', desc: 'Meyve suyu kutusu, plastik atık.' },
+      { symbol: '🧺', category: 'Plastik', desc: 'Plastik sepet, geri dönüştürülebilir.' },
+      { symbol: '🧹', category: 'Plastik', desc: 'Süpürge, plastik kısımları ayrılır.' },
+      { symbol: '🧸', category: 'Plastik', desc: 'Plastik oyuncak, geri dönüşüm için.' },
+      { symbol: '🍊', category: 'Organik', desc: 'Portakal kabuğu, organik atıktır.' },
+      { symbol: '🍍', category: 'Organik', desc: 'Ananas kabuğu, kompost için uygun.' },
+      { symbol: '🥔', category: 'Organik', desc: 'Patates kabuğu, organik atık.' },
+      { symbol: '🥦', category: 'Organik', desc: 'Brokoli, organik atık kutusuna.' },
+      { symbol: '🍇', category: 'Organik', desc: 'Üzüm, organik atık olarak ayrılır.' },
+      { symbol: '🍸', category: 'Cam', desc: 'Kokteyl bardağı, cam geri dönüşüm.' },
+      { symbol: '🥂', category: 'Cam', desc: 'Kadeh, cam kutusuna atılır.' },
+      { symbol: '🪞', category: 'Cam', desc: 'Ayna, cam geri dönüşüm için uygun.' },
+      { symbol: '🫖', category: 'Cam', desc: 'Cam demlik, geri dönüştürülebilir.' },
+      { symbol: '📃', category: 'Kağıt', desc: 'Not kağıdı, kağıt geri dönüşüm.' },
+      { symbol: '📅', category: 'Kağıt', desc: 'Takvim, kağıt olarak ayrılır.' },
+      { symbol: '📋', category: 'Kağıt', desc: 'Pano kağıdı, kağıt geri dönüşüm.' },
+      { symbol: '🗞️', category: 'Kağıt', desc: 'Eski gazete, kağıt atık.' },
+      { symbol: '📩', category: 'Kağıt', desc: 'Zarf, kağıt geri dönüşüm kutusuna.' },
+      { symbol: '🪚', category: 'Metal', desc: 'Testere, metal geri dönüşüm için.' },
+      { symbol: '🔩', category: 'Metal', desc: 'Vida, metal atık olarak ayrılır.' },
+      { symbol: '🧲', category: 'Metal', desc: 'Mıknatıs, metal geri dönüşüm.' },
+      { symbol: '🗡️', category: 'Metal', desc: 'Kılıç, metal olarak geri dönüştürülür.' },
+      { symbol: '🛡️', category: 'Metal', desc: 'Kalkan, metal geri dönüşüm kutusuna.' },
+      { symbol: '🪙', category: 'Metal', desc: 'Madeni para, metal atıktır.' }
+    ];
+
+    let score = 0;
+    let highScore = localStorage.getItem('highScore') || 0;
+    let timeLeft = 60;
+    let currentSymbol = null;
+    let gameActive = true;
+
+    const symbolArea = document.getElementById('symbolArea');
+    const tooltip = symbolArea.querySelector('.tooltip');
+    const feedback = document.getElementById('feedback');
+    const scoreBoard = document.getElementById('scoreBoard');
+    const progressBar = document.getElementById('progressBar');
+    const gameOver = document.getElementById('gameOver');
+    const finalScore = document.getElementById('finalScore');
+    const starsDisplay = document.getElementById('stars');
+
+    // Sound effects
+    const correctSound = new Audio('https://cdn.pixabay.com/audio/2023/12/26/14-01-04-774_1.mp3');
+    const incorrectSound = new Audio('https://cdn.pixabay.com/audio/2022/03/10/14-41-49-160_1.mp3');
+    const gameOverSound = new Audio('https://cdn.pixabay.com/audio/2022/05/13/16-44-27-716_1.mp3');
+
+    // Update scoreboard
+    function updateScoreBoard() {
+      scoreBoard.textContent = `Skor: ${score} | Rekor: ${highScore}`;
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('highScore', highScore);
+        triggerConfetti();
+      }
+    }
+
+    // Show a random symbol
+    function showRandomSymbol() {
+      if (!gameActive) return;
+      const randomIndex = Math.floor(Math.random() * symbols.length);
+      currentSymbol = symbols[randomIndex];
+      symbolArea.textContent = currentSymbol.symbol;
+      tooltip.textContent = currentSymbol.desc;
+      symbolArea.style.animation = 'none';
+      void symbolArea.offsetWidth;
+      symbolArea.style.animation = 'slideIn 0.5s ease-out';
+    }
+
+    // Handle sorting
+    function sortItem(category) {
+      if (!gameActive || !currentSymbol) return;
+      const isCorrect = currentSymbol.category === category;
+      feedback.textContent = isCorrect ? '✅' : '❌';
+      feedback.style.opacity = 1;
+      if (isCorrect) {
+        score++;
+        correctSound.play().catch(() => {});
+      } else {
+        score = Math.max(0, score - 1);
+        incorrectSound.play().catch(() => {});
+      }
+      setTimeout(() => { feedback.style.opacity = 0; }, 500);
+      updateScoreBoard();
+      showRandomSymbol();
+    }
+
+    // Timer with progress bar
+    function startTimer() {
+      const timer = setInterval(() => {
+        timeLeft--;
+        progressBar.style.width = `${(timeLeft / 60) * 100}%`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          gameActive = false;
+          symbolArea.textContent = '';
+          gameOverSound.play().catch(() => {});
+          showGameOver();
+        }
+      }, 1000);
+    }
+
+    // Game over screen
+    function showGameOver() {
+      const stars = score >= 30 ? '⭐⭐⭐' : score >= 20 ? '⭐⭐' : score >= 10 ? '⭐' : '😊';
+      finalScore.textContent = `Skor: ${score}`;
+      starsDisplay.textContent = `Yıldız: ${stars}`;
+      gameOver.style.display = 'block';
+    }
+
+    // Play again
+    function playAgain() {
+      score = 0;
+      timeLeft = 60;
+      gameActive = true;
+      gameOver.style.display = 'none';
+      progressBar.style.width = '100%';
+      updateScoreBoard();
+      showRandomSymbol();
+      startTimer();
+    }
+
+    // Exit game
+    function exitGame() {
+      gameActive = false;
+      window.location.href = 'profile.html';
+    }
+
+    // Confetti for new high score
+    function triggerConfetti() {
+      for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = `${Math.random() * 100}vw`;
+        confetti.style.background = ['#FF69B4', '#FFD700', '#32CD32', '#1E90FF'][Math.floor(Math.random() * 4)];
+        document.body.appendChild(confetti);
+        setTimeout(() => confetti.remove(), 2000);
+      }
+    }
+
+    // Add animated clouds
+    function addClouds() {
+      for (let i = 0; i < 5; i++) {
+        const cloud = document.createElement('div');
+        cloud.className = 'cloud';
+        cloud.textContent = '☁️';
+        cloud.style.top = `${20 + i * 100}px`;
+        cloud.style.left = `${Math.random() * 100}vw`;
+        cloud.style.animationDelay = `${-i * 4}s`;
+        document.body.appendChild(cloud);
+      }
+    }
+
+    // Initialize game
+    addClouds();
+    updateScoreBoard();
+    showRandomSymbol();
+    startTimer();
+  </script>
+</body>
+</html>

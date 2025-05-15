@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barkod Yükle ve Tara</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="profile.html" class="flex items-center">
+                        <img src="logo.jpg" alt="Logo" class="w-8 h-8 rounded-full" />
+                        <span class="text-2xl font-bold text-green-600 ml-2">EcoSim</span>
+                    </a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="profile.html" class="text-gray-600 hover:text-green-600">Profil</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto py-8 px-4">
+        <div class="max-w-lg mx-auto bg-white rounded-lg shadow-md p-6 text-center">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Barkod Yükle ve Tara</h2>
+            <p class="text-gray-600 mb-6">Bir barkod içeren fotoğraf seçin:</p>
+            <input type="file" id="barcode-upload" accept="image/*" class="block mx-auto text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+            <div id="result" class="mt-6"></div>
+        </div>
+    </div>
+
+    <script>
+        const productDatabase = {
+            "8690574114528": {
+                name: "kola şişesi",	
+                ingredients: ["fosforik asit"],
+                energy: "2MJ enerji tüketimi",
+                carbon:  "50g CO₂-e tüketimi",
+                water: "3 litre su tüketimi",
+                recycling: "pet şişe ve kapağı plastik geri dönüşüm kutusuna atın."
+            },
+            "1234567890123": {
+                name: "Organik Elma Suyu",
+                ingredients: ["Organik elma (%100)", "Askorbik asit (C vitamini)"],
+                energy: "150 kWh/ton üretim",
+                recycling: "Cam şişe: Cam geri dönüşüm kutusuna atın. Kapak: Metal geri dönüşüm kutusuna atın."
+            },
+            "9876543210987": {
+                name: "Plastik Su Şişesi",
+                ingredients: ["PET plastik", "Su"],
+                energy: "200 kWh/ton üretim",
+                recycling: "Plastik şişe: Plastik geri dönüşüm kutusuna atın. Kapak: Plastik geri dönüşüm kutusuna atın."
+            },
+            "6933256658807": {
+                name: "Plastik kalem",
+                ingredients: ["Polipropilen", "polistiren", "plastik"],
+                energy: "100 kWh/ton üretim",
+                recycling: "Plastik ve metal parçaları ayrıştırın, uygun geri dönüşüm kutularına atın. Mürekkep kısmı genellikle geri dönüştürülemez."
+            }
+            
+        };
+
+        document.getElementById('barcode-upload').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function () {
+                const imgSrc = reader.result;
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = `<p class="text-gray-600">Fotoğraf işleniyor...</p><img src="${imgSrc}" alt="Yüklenen Görsel" class="mt-4 mx-auto max-w-full rounded-lg">`;
+
+                Quagga.decodeSingle({
+                    src: imgSrc,
+                    numOfWorkers: 0,
+                    decoder: {
+                        readers: ["ean_reader", "upc_reader"]
+                    },
+                    locate: true
+                }, function (result) {
+                    if (result && result.codeResult) {
+                        const code = result.codeResult.code;
+                        const product = productDatabase[code];
+                        if (product) {
+                            resultDiv.innerHTML = `
+                                <h2 class="text-xl font-semibold text-gray-800 mb-3">${product.name}</h2>
+                                <p class="text-gray-700 mb-2"><strong>Barkod:</strong> ${code}</p>
+                                <p class="text-gray-700 mb-2"><strong>İçindekiler:</strong> ${product.ingredients.join(", ")}</p>
+                                <p class="text-gray-700 mb-2"><strong>Enerji Tüketimi:</strong> ${product.energy}</p>
+                                <p class="text-gray-700 mb-4"><strong>Geri Dönüşüm:</strong> ${product.recycling}</p>
+                                <img src="${imgSrc}" alt="Yüklenen Görsel" class="mt-4 mx-auto max-w-full rounded-lg">
+                            `;
+                        } else {
+                            resultDiv.innerHTML = `
+                                <p class="text-gray-700 mb-2"><strong>Barkod:</strong> ${code}</p>
+                                <p class="text-red-600 font-semibold mb-4">Bu barkodla eşleşen ürün veritabanında bulunamadı.</p>
+                                <img src="${imgSrc}" alt="Yüklenen Görsel" class="mt-4 mx-auto max-w-full rounded-lg">
+                            `;
+                        }
+                    } else {
+                        resultDiv.innerHTML = `<p class="text-red-600 font-semibold mb-4">Barkod algılanamadı. Lütfen daha net bir görsel yükleyin.</p><img src="${imgSrc}" alt="Yüklenen Görsel" class="mt-4 mx-auto max-w-full rounded-lg">`;
+                    }
+                });
+            };
+            reader.readAsDataURL(file);
+        });
+
+      // Sayfa yüklendiğinde localStorage'daki dili uygula
+      (function() {
+        var lang = localStorage.getItem("language") || "tr";
+        document.documentElement.lang = lang;
+        var langSelect = document.querySelector('select[name="language"], select#language, select');
+        if (langSelect) {
+          langSelect.value = lang;
+          langSelect.addEventListener("change", function(e) {
+            localStorage.setItem("language", e.target.value);
+            document.documentElement.lang = e.target.value;
+            location.reload();
+          });
+        }
+      })();
+    </script>
+</body>
+</html>

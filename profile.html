@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EcoSim - Profil</title>
+  <meta name="description" content="EcoSim: Profil sayfanız" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { poppins: ["Poppins", "sans-serif"] },
+          animation: {
+            slide: "slideDown 0.3s ease-in-out",
+            fade: "fadeIn 0.5s ease-in"
+          },
+          keyframes: {
+            slideDown: { '0%': { transform: 'translateY(-10%)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
+            fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } }
+          }
+        }
+      }
+    };
+  </script>
+</head>
+
+<body class="bg-green-50 text-gray-900 font-poppins">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    // Çeviri fonksiyonu
+const getCurrentLang = () => localStorage.getItem("language") || "tr";
+let currentLang = getCurrentLang();
+
+const translate = (key) => {
+  const keys = key.split(".");
+  let value = translations[currentLang];
+  for (let k of keys) {
+    if (value[k]) value = value[k];
+    else return key;
+  }
+  return value;
+};
+
+const toggleLang = () => {
+  const newLang = currentLang === "tr" ? "en" : "tr";
+  setCurrentLang(newLang);
+  localStorage.setItem("language", newLang);
+};
+
+const translations = {
+  tr: {
+    profile: "Profil",
+settings: "Ayarlar",
+profileSettings: "Profil Ayarları",
+compost: "Evsel Atıklar",
+scanner: "Barkod Tara",
+industry: "Sanayi Atıkları",
+game: "Oyun",
+projectRace: "Proje Yarışması",
+logout: "Çıkış Yap",
+logoutHome: "Çıkış Yap - Anasayfa",
+home: "Ana Sayfa",
+successMessage: "Profil başarıyla güncellendi!",
+carbonChartLabel: "Karbon Ayak İzi (kg CO2)",
+waterChartLabel: "Su Ayak İzi (litre)",
+congrats1: "Tebrikler! +6 Karbon, +6 Su, +6 Enerji puanı kazandınız!",
+reuseTaskText: "Evdeki eski bir eşyayı (örneğin bir tişört, kutu) yeni bir kullanım için yeniden değerlendirin.",
+congrats2: "Tebrikler! +6 Karbon, +6 Su, +7 Enerji puanı kazandınız!",
+glassTaskText: "Bir cam kavanozu temizleyin ve mutfakta saklama kabı olarak kullanın.",
+bagTaskText: "Alışveriş yaparken plastik poşet yerine tekrar kullanılabilen bez çanta kullanın.",
+congrats3: "Tebrikler! +7 Karbon, +7 Su, +6 Enerji puanı kazandınız!",
+bottleTaskText: "Bugün kullandığınız plastik şişe sayısını not edin ve birini geri dönüştürün.",
+congrats4: "Tebrikler! +6 Karbon, +5 Su, +6 Enerji puanı kazandınız!",
+high: "Yüksek",
+low: "Düşük",
+incandescent: "Akkor",
+privateVehicle: "Özel araç",
+publicTransport: "Toplu taşıma",
+    ecoTaskTitle: "Günlük Çevreci Görev",
+ecoTaskQuestion1: "Soru: Bugün tek kullanımlık bir ürünü reddettin mi? ...",
+ecoTaskExample1 : "Örnek: Kahve için kendi termosunu kullanın veya pipetlemeyi istemeyin. Evde yeniden kullanılabilir alternatifler arayın.",
+ecoTaskAction1: "Görev: Bugün tek kullanımlık bir eşyayı (örneğin plastik bardak, pipet) kullanmaktan kaçının.",
+ecoTaskAction2 : "Evdeki bir eski eşyayı farklı bir amaçla kullanın (ör. tişörtler, kutu).",
+ecoTaskExample2 : "Örnek: Eski bir tişörtüü toz bezi olarak kullanım veya saklama için yeniden saklanmak.",
+ecoTaskQuestion2 : "Soru: Bugün evde eski bir eşyayı yeniden kullandınız mı? Hangi eşyayı ve nasıl?",
+ecoTaskAction3 : "Bir cam kavanozu temizleyin ve saklama kabı olarak kullanın.",
+ecoTaskExample3 : "Örnek: Cam kavanozları baharat, bakliyat veya yedek parçaları saklamak için kullanın.",
+ecoTaskQuestion3 : "Soru: Mutfakta cam kavanozları nasıl kullanıyorsunuz? Yeni bir kullanım buldunuz mu?",
+ecoTaskAction4 : "Alışverişte plastik poşet yerine bez çanta kullanın.",
+ecoTaskExample4 : "Örnek: Alışverişe gitmeden önce bez çanta alın. Bakkaliyeyi bununla taşıyın.",
+ecoTaskQuestion4 : "Soru: Alışverişte plastik poşet yerine ne kullandınız? Bez çantanızı taktığınız mı?",
+ecoTaskAction5 : "Bugünkü plastik şişe sayısı sayın ve en az birini geri dönüştürün.",
+ecoTaskExample5 : "Örnek: Bir su şişesini bitirdikten sonra geri dönüşüm depolama alanına atın. Kaç tane kullandığınızı takip edin.",
+ecoTaskQuestion5 : "Soru: Bugün kaç plastik şişe kullandınız? Geri dönüşüm için bir adım attınız mı?",
+ecoTaskAction6 : "Bir hafta boyunca atıklarınızı ayırın ve geri dönüşüm noktasına götürün.",
+ecoTaskExample6 : "Örnek: Günlük atıklarınızı (plastik, cam, kağıt) ayrı kutulara ayırın ve hafta sonunda geri dönüşüme götürün.",
+ecoTaskQuestion6 : "Soru: Atık ayırmada ne kadar dikkatlisiniz? Geri dönüşüm için bir adım attınız mı?",
+
+    greeting: "Merhaba",
+    profile: "Profil",
+    logout: "Çıkış Yap",
+    login: "Giriş Yap",
+    home: "Anasayfa",
+    calculate: "Hesapla",
+    menuToggle: "Menüyü Aç / Kapat",
+    settings: "Ayarlar",
+    compost: "Evsel atıklar",
+    scanner: "Barkod Tara",
+    industry: "Sanayi atıkları",
+    updateProfile: "Profili Güncelle",
+    successMessage: "Profil başarıyla güncellendi!",
+    userName: "Kullanıcı Adı",
+    email: "E-posta",
+    city: "Şehir",
+    level: "Seviye",
+    ranking: "Sıralama",
+    carbon: "Karbon",
+    water: "Su",
+    energy: "Enerji",
+    stats: "Puanlar",
+    averageConsumption: "Ortalama Tüketim Verilerin",
+    daily: "Günlük",
+    weekly: "Haftalık",
+    monthly: "Aylık",
+    carbonChart: "Karbon Ayak İzi İlerlemesi",
+    waterChart: "Su Ayak İzi İlerlemesi",
+    ecoTask: "Günlük Çevreci Görev",
+    example: "Örnek",
+    didIt: "YAPTIM",
+    pastTasks: "Geçmiş Görevler",
+    clear: "Temizle",
+    noTasks: "Henüz geçmiş görev bulunmamaktadır.",
+    chatTitle: "Yeşil Dost ile Sohbet Et",
+    send: "Gönder",
+    writeMessage: "Yeşil Dost'a bir şeyler yaz...",
+    mapTitle: "Harita: Çevreci Noktalar",
+    faq: "Sıkça Sorulan Sorular",
+    question: "Soru",
+    answer: "Cevap",
+    footerText: "© 2025 EcoSim. Tüm hakları saklıdır.",
+    changeLanguage: "Dili Değiştir",
+    world:"Merhaba! Yeşil Dost ile çevreci bir sohbet başlatmak için bir şeyler yaz. 😊",
+    ktkt:"tükettim",
+    krbn:"karbon",
+    elkrt:"elektrik",
+    su:"su",
+    etk:"etki",
+    tmmla:"tamamla",
+    yşldsdşny:"Yeşil Dost düşünüyor...",
+    gnd:"gönder",
+    tmmlmtrh:"tamamlanma tarihi",
+    daily: "Günlük",
+weekly: "Haftalık",
+monthly: "Aylık",
+gdgd:"Yeşil Dost'a bir şeyler yaz",
+fgfg:"Bugün tek kullanımlık bir ürünü (ör. plastik bardak, pipet) kullanmaktan vazgeç.",
+singleUseTaskText: "Bugün tek kullanımlık bir ürünü (ör. plastik bardak, pipet) kullanmaktan vazgeç.",
+reuseTaskText: "Evdeki bir eski eşyayı (ör. tişört, kutu) farklı bir amaçla kullan.",
+glassTaskText: "Bir cam kavanozu temizle ve mutfakta saklama kabı olarak kullan.",
+bagTaskText: "Alışverişe giderken plastik poşet yerine bir bez çanta kullan.",
+bottleTaskText: "Bugün kullandığın plastik şişe sayısını not et ve birini geri dönüşüm kutusuna at.",
+wasteTaskText: "Bir hafta boyunca atıklarını ayır ve geri dönüşüm noktasına götür.",
+
+congrats1: "Tebrikler! +6 Karbon, +6 Su, +6 Enerji puanı kazandınız!",
+congrats2: "Tebrikler! +6 Karbon, +6 Su, +7 Enerji puanı kazandınız!",
+congrats3: "Tebrikler! +7 Karbon, +7 Su, +6 Enerji puanı kazandınız!",
+congrats4: "Tebrikler! +6 Karbon, +5 Su, +6 Enerji puanı kazandınız!",
+congrats5: "Tebrikler! +8 Karbon, +6 Su, +7 Enerji puanı kazandınız!",
+task:"görev",
+Example:"örnek",
+lending:"Emanet",
+
+  },
+  en: {
+    lending:"Lending",
+    task:"task",
+    Example:"example",
+    averageConsumption:"Average Consumption Data",
+    
+    singleUseTaskText: "Avoid using a single-use item today (e.g., plastic cup, straw).",
+reuseTaskText: "Repurpose an old item at home (e.g., t-shirt, box).",
+glassTaskText: "Clean a glass jar and use it as a kitchen storage container.",
+bagTaskText: "Use a cloth bag instead of a plastic one while shopping.",
+bottleTaskText: "Note the number of plastic bottles you used today and recycle one.",
+wasteTaskText: "Separate your waste for a week and take it to a recycling point.",
+
+congrats1: "Congratulations! +6 Carbon, +6 Water, +6 Energy points earned!",
+congrats2: "Congratulations! +6 Carbon, +6 Water, +7 Energy points earned!",
+congrats3: "Congratulations! +7 Carbon, +7 Water, +6 Energy points earned!",
+congrats4: "Congratulations! +6 Carbon, +5 Water, +6 Energy points earned!",
+congrats5: "Congratulations! +8 Carbon, +6 Water, +7 Energy points earned!",
+
+    fgfg:"Stop using a single-use item (e.g. plastic cup, straw) today",
+    profile: "Profile",
+settings: "Settings",
+profileSettings: "Profile Settings",
+compost: "Household Waste",
+scanner: "Barcode Scanner",
+industry: "Industrial Waste",
+game: "Game",
+projectRace: "Project Competition",
+logout: "Log Out",
+logoutHome: "Log Out - Home",
+home: "Home Page",
+successMessage: "Profile updated successfully!",
+carbonChartLabel: "Carbon Footprint (kg CO2)",
+waterChartLabel: "Water Footprint (liters)",
+congrats1: "Congratulations! +6 Carbon, +6 Water, +6 Energy points earned!",
+reuseTaskText: "Repurpose an old item (e.g., a t-shirt, box) for a new use.",
+congrats2: "Congratulations! +6 Carbon, +6 Water, +7 Energy points earned!",
+glassTaskText: "Clean a glass jar and use it as a storage container in your kitchen.",
+bagTaskText: "Use a reusable cloth bag instead of a plastic bag when shopping.",
+congrats3: "Congratulations! +7 Carbon, +7 Water, +6 Energy points earned!",
+bottleTaskText: "Note the number of plastic bottles you used today and recycle one.",
+congrats4: "Congratulations! +6 Carbon, +5 Water, +6 Energy points earned!",
+high: "High",
+low: "Low",
+incandescent: "Incandescent",
+privateVehicle: "Private Vehicle",
+publicTransport: "Public Transport",
+gdgd:"Write something to Green Friend",
+  daily: "Daily",
+weekly: "Weekly",
+monthly: "Monthly",
+
+  profile: "Profile",
+  updateProfile: "Update Profile",
+  successMessage: "Profile updated successfully!",
+  ecoTaskTitle: "Daily Eco Task",
+ecoTaskQuestion1: "Question: Did you avoid a single-use item today? What alternative did you use?",
+ecoTaskAction1: "Task: Avoid using a single-use item today (e.g. plastic cup, straw).",
+ecoTaskExample1: "Example: Use your own thermos for coffee or refuse a straw at a restaurant. Look for reusable alternatives at home.",
+ecoTaskQuestion2: "Question: Did you reuse an old item at home today? Which item and how?",
+ecoTaskAction2: "Task: Repurpose an old item at home (e.g. t-shirt, box).",
+ecoTaskExample2: "Example: Use an old t-shirt as a rag or repurpose boxes for storage.",
+ecoTaskQuestion3: "Question: How are you using glass jars in the kitchen? Found a new use?",
+ecoTaskAction3: "Task: Clean a glass jar and use it as a storage container.",
+ecoTaskExample3: "Example: Use glass jars to store spices, legumes, or snacks.",
+ecoTaskQuestion4: "Question: What did you use instead of plastic bags when shopping? Did you try a cloth bag?",
+ecoTaskAction4: "Task: Use a cloth bag instead of plastic when shopping.",
+ecoTaskExample4: "Example: Take a cloth bag with you before going shopping. Carry your groceries in it.",
+ecoTaskQuestion5: "Question: How many plastic bottles did you use today? Did you take any recycling action?",
+ecoTaskAction5: "Task: Count the plastic bottles you used today and recycle at least one.",
+ecoTaskExample5: "Example: After finishing a bottle of water, place it in a recycling bin. Keep track of how many you use.",
+ecoTaskQuestion6: "Question: How careful are you about separating waste? Did you take any steps for recycling?",
+ecoTaskAction6: "Task: Separate your waste for a week and take it to a recycling point.",
+ecoTaskExample6: "Example: Sort your daily waste (plastic, glass, paper) into separate bins and take them to recycling by the end of the week.",
+didIt: "I DID IT",
+pastTasks: "Past Tasks",
+clear: "Clear",
+noTasks: "No past tasks found.",
+chatTitle: "Chat with Green Buddy",
+send: "Send",
+writeMessage: "Type something to Green Buddy...",
+mapTitle: "Map: Eco Points",
+faq: "Frequently Asked Questions",
+question: "Question",
+answer: "Answer",
+footerText: "© 2025 EcoSim. All rights reserved.",
+changeLanguage: "Switch Language",
+world:"Hello, write something to start an eco-friendly conversation with Green Friend. 😊",
+ktkt:"Consumption",
+krbn:"Carbon",
+elkrt:"Electricity",
+su:"Water",
+etk:"Impact",
+tmmla:"Complete",
+yşldsdşny:"Green Friend is thinking...",
+gnd:"send",
+tmmlmtrh:"Completion Date",
+  }
+};
+
+const userTemplate = {
+  name: "Kullanıcı",
+  email: "user@example.com",
+  city: "İstanbul",
+  livingStandard: "Orta",
+  transportation: "Toplu taşıma",
+  level: 1,
+  ranking: 100,
+  carbonpoints: 0,
+  waterpoints: 0,
+  energypoints: 0,
+  carbonFootprint: [100, 95, 90, 85],
+  waterFootprint: [200, 190, 180, 170],
+  suggestions: [],
+  consumption: {
+    daily: { carbon: 5, electricity: 4, water: 120 },
+    weekly: { carbon: 35, electricity: 28, water: 840 },
+    monthly: { carbon: 150, electricity: 120, water: 3600 }
+  },
+  habits: {
+    dailyShowerTime: "5",
+    lightingType: "LED",
+    transportationType: "Toplu taşıma"
+  }
+};
+
+    const getUser = () => {
+  const user = JSON.parse(localStorage.getItem("ecoSimUser")) || userTemplate;
+  user.consumption = calculateDynamicConsumption(user); // Tüketimi güncelle
+  return user;
+};
+
+    const setUser = (data) => localStorage.setItem("ecoSimUser", JSON.stringify(data));
+
+    function Navbar({ currentLang, toggleLang, translate }) {
+      const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+      const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
+      const dropdownRef = React.useRef(null);
+      const t = translations[currentLang];
+      
+      // Dışarı tıklandığında dropdown'ı kapat
+      React.useEffect(() => {
+        const handleClickOutside = (event) => {
+          if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+            setIsDropdownOpen(false);
+          }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+      }, []);
+
+      const handleLanguageChange = (e) => {
+        toggleLang(e.target.value);
+      };
+
+      const menuItems = [
+        { href: "#", text: "Profil", active: true },
+        { href: "settings.html", text: translate("settings") },
+        { href: "composte.html", text: translate("compost") },
+        { href: "emanet_index.html", text: translate("lending") },
+        { href: "barkode-scanner.html", text: translate("scanner") },
+        { href: "sanayi.html", text: translate("industry") },
+        { href: "game.html", text: translate("game") },
+        { href: "gameb.html", text: translate("projectRace") },
+        { href: "index.html", text: translate("logout"), red: true }
+      ];
+
+      return (
+        <nav className="flex justify-between items-center px-6 py-4 bg-white shadow-md sticky top-0 z-10 rounded-b-xl">
+          <div className="flex items-center space-x-4">
+            <img src="logo.jpg" alt="Logo" onClick={() => window.location.reload()} className="w-12 h-12 rounded-full cursor-pointer hover:opacity-80 transition-all duration-300" />
+            <span className="text-3xl font-bold text-green-600 hover:text-green-700 transition-colors duration-300">EcoSim</span>
+          </div>
+          
+          <div className="hidden md:flex items-center space-x-4">
+            {/* Dropdown Menu */}
+            <div className="relative" ref={dropdownRef}>
+              <button 
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-green-50 hover:bg-green-100 transition-colors duration-300"
+              >
+                <span>Menü</span>
+                <svg className={`w-5 h-5 transform transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 animate-fade">
+                  {menuItems.map((item, index) => (
+                    <a
+                      key={index}
+                      href={item.href}
+                      className={`block px-4 py-2 text-sm ${
+                        item.active ? 'text-green-600 font-semibold bg-green-50' :
+                        item.red ? 'text-red-600 hover:bg-red-50' :
+                        'text-gray-700 hover:bg-green-50'
+                      } transition-colors duration-200`}
+                    >
+                      {item.text}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Language Selector */}
+            <select
+              value={currentLang}
+              onChange={handleLanguageChange}
+              className="px-3 py-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors duration-300 cursor-pointer border-none focus:outline-none"
+            >
+              <option value="en">English</option>
+              <option value="tr">Türkçe</option>
+            </select>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16m-7 6h7"} />
+            </svg>
+          </button>
+
+          {/* Mobile Menu */}
+          {isMenuOpen && (
+            <div className="absolute top-full left-0 right-0 bg-white shadow-lg md:hidden animate-slide">
+              {menuItems.map((item, index) => (
+                <a
+                  key={index}
+                  href={item.href}
+                  className={`block px-6 py-3 ${
+                    item.active ? 'bg-green-50 text-green-600 font-semibold' :
+                    item.red ? 'bg-red-50 text-red-600' :
+                    'hover:bg-green-50'
+                  } transition-colors duration-200`}
+                >
+                  {item.text}
+                </a>
+              ))}
+              <div className="px-6 py-3 border-t">
+                <select
+                  value={currentLang}
+                  onChange={handleLanguageChange}
+                  className="w-full p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors duration-300"
+                >
+                  <option value="en">English</option>
+                  <option value="tr">Türkçe</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </nav>
+      );
+    }
+
+    function NavItem({ href, text, active, red }) {
+      return (
+        <a 
+          href={href} 
+          className={`text-lg ${
+            active 
+              ? "text-green-600 font-semibold" 
+              : red 
+                ? "text-red-600 hover:text-red-700 font-semibold" 
+                : "hover:text-green-600"
+          }`}
+        >
+          {text}
+        </a>
+      );
+    }
+
+    function MobileMenu({ close }) {
+      return (
+        <div className="absolute top-10 left-10 w-full bg-white shadow-md rounded-b-xl animate-slide">
+          <NavLink href="index.html#home" text={translate("home")} close={close} />
+          <NavLink href="#" text={translate("profile")} close={close} active />
+          <NavLink href="index.html" text={translate("logout")} close={close} red />
+        </div>
+      );
+    }
+
+    function NavLink({ href, text, close, active, red }) {
+      return (
+        <a href={href} onClick={close} className={`block px-6 py-3 text-lg ${active ? "bg-green-100 text-green-600 font-semibold" : red ? "bg-red-600 text-white hover:bg-red-700" : "hover:bg-green-50"}`}>{text}</a>
+      );
+    }
+
+    function createChart(id, label, data, color) {
+      const ctx = document.getElementById(id).getContext("2d");
+      return new Chart(ctx, {
+        type: 'line',
+        data: { labels: ["Hafta 1", "Hafta 2", "Hafta 3", "Hafta 4"], datasets: [{ label, data, borderColor: color, tension: 0.4, fill: false }] },
+        options: { responsive: true, plugins: { legend: { position: "top" } }, scales: { y: { beginAtZero: true } }, animation: { duration: 1000 } }
+      });
+    }
+
+    // Gemini API çağrısı için yardımcı fonksiyon (Sohbet için)
+    async function fetchGeminiChatResponse(user, message, apiKey) {
+      const prompt = `
+        Sen, EcoSim'in çevreci asistanısın ve adın "Yeşil Dost". Kullanıcıyla samimi, motive edici ve arkadaşça bir tonda konuş. Amacın, kullanıcının günlük alışkanlıklarını çevre dostu hale getirmeye ikna etmek ve kullancııya geri dönüşüm alışkanlığı kazandırmak. Kullanıcının mesajlarına yanıt verirken, onun profil verilerini dikkate alarak kişiselleştirilmiş, uygulanabilir çevreci öneriler sun. Öneriler, kullanıcının yaşam tarzına uygun, basit ve motive edici olmalı. Kullanıcının çevresel etkisini (karbon, su, enerji) azaltmaya ve geri dönüşüme yönlendirmeye odaklan ve her zaman pozitif, teşvik edici bir dil kullan. Kullanıcıya sorular sorarak sohbete devam et ve çevreci alışkanlıkları benimsemesini teşvik et. kullanıcıyı sıkmadan çok uzun olmayan cevaplar ver. bu site bir hackathon projesidir ve kullanıcıların çevre dostu alışkanlıklar edinmelerine yardımcı olmayı amaçlamaktadır. cevapların kısa olsun. kullanıcının yazdığı şeyle alakalı cevaplar ver. konu dışına çıkma. bir sohbette aynı cevabı bir daha verme. sitede geri dönüşüm noktaları var. kullanıcıyı geri dönüşüme atmak dışında da geri dönüşüm yolları öner
+
+        Kullanıcı verileri:
+        - Şehir: ${user.city}
+        - Yaşam Standardı: ${user.livingStandard}
+        - Ulaşım: ${user.transportation}
+        - Günlük Tüketim: Karbon: ${user.consumption.daily.carbon} kg, Elektrik: ${user.consumption.daily.electricity} kWh, Su: ${user.consumption.daily.water} L
+        - Mevcut Puanlar: Karbon: ${user.carbonpoints}, Su: ${user.waterpoints}, Enerji: ${user.energypoints}
+
+        Kullanıcının mesajı: "${message}"
+
+        Örnek yanıt formatı:
+        - Samimi bir selam veya yorum
+        - Kullanıcının mesajına yanıt ve çevreci bir öneri
+        - Motive edici bir kapanış ve kullanıcıya bir soru
+
+        Yanıtı doğrudan metin olarak döndür (JSON değil).
+      `;
+
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }]
+            })
+          }
+        );
+
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text;
+      } catch (error) {
+        console.error('Gemini API Hatası (Sohbet):', error);
+        return 'Üzgünüm, bir hata oluştu. Lütfen tekrar deneyin!';
+      }
+    }
+
+    function Notification({ message, type = "success", onClose }) {
+      React.useEffect(() => {
+        const timer = setTimeout(onClose, 3000);
+        return () => clearTimeout(timer);
+      }, [onClose]);
+
+      return (
+        <div className="fixed top-4 right-4 z-50 animate-slide bg-white shadow-lg rounded-lg px-4 py-3 border-l-4 border-green-500">
+          <div className="flex items-center">
+            <div className="ml-3">
+              <p className="text-sm font-medium text-green-600">{message}</p>
+            </div>
+            <button onClick={onClose} className="ml-4">
+              <span className="text-green-600">&times;</span>
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    function Profile({ currentLang, translate }) {
+      const [user, setUserState] = React.useState(getUser());
+      const [editableUser, setEditableUser] = React.useState({...user});
+      const [loading, setLoading] = React.useState(false);
+      const [chatMessages, setChatMessages] = React.useState([]);
+      const [chatInput, setChatInput] = React.useState('');
+      const [chatLoading, setChatLoading] = React.useState(false);
+      const [notification, setNotification] = React.useState(null);
+      const [completedTasks, setCompletedTasks] = React.useState(
+        JSON.parse(localStorage.getItem("completedTasks")) || []
+      );
+      const [isTaskVisible, setIsTaskVisible] = React.useState(true);
+      const [isReuseTaskVisible, setIsReuseTaskVisible] = React.useState(true);
+      const [isGlassTaskVisible, setIsGlassTaskVisible] = React.useState(true);
+      const [isBagTaskVisible, setIsBagTaskVisible] = React.useState(true);
+      const [isBottleTaskVisible, setIsBottleTaskVisible] = React.useState(true);
+      const [isWasteTaskVisible, setIsWasteTaskVisible] = React.useState(true);
+      const carbonChartRef = React.useRef(null);
+      const waterChartRef = React.useRef(null);
+      const chatContainerRef = React.useRef(null);
+      const apiKey = 'AIzaSyBE0dyvNR4INfcfIcveytcM3eXArzgh9K0';
+
+      const handleChange = (e) => {
+        const { name, value } = e.target;
+        setEditableUser(prev => {
+          if (name.includes('.')) {
+            const [parent, child] = name.split('.');
+            return {
+              ...prev,
+              [parent]: {
+                ...prev[parent],
+                [child]: value
+              }
+            };
+          }
+          return {
+            ...prev,
+            [name]: value
+          };
+        });
+      };
+
+      const handleSave = () => {
+        setUserState(editableUser);
+        setUser(editableUser);
+        setNotification(translate("successMessage"));
+      };
+
+      React.useEffect(() => {
+        carbonChartRef.current = createChart("carbonChart", "Karbon Ayak İzi (kg CO2)", user.carbonFootprint, "#059669");
+        waterChartRef.current = createChart("waterChart", "Su Ayak İzi (litre)", user.waterFootprint, "#3B82F6");
+      }, []);
+
+      React.useEffect(() => {
+        if (carbonChartRef.current) {
+          carbonChartRef.current.data.datasets[0].data = user.carbonFootprint;
+          carbonChartRef.current.update();
+        }
+        if (waterChartRef.current) {
+          waterChartRef.current.data.datasets[0].data = user.waterFootprint;
+          waterChartRef.current.update();
+        }
+      }, [user.carbonFootprint, user.waterFootprint]);
+
+      // Sohbet mesajları güncellendiğinde otomatik kaydırma
+      React.useEffect(() => {
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+      }, [chatMessages]);
+
+
+
+      // Sohbet mesajı gönderme
+      const handleSendMessage = async () => {
+        if (!chatInput.trim()) return;
+
+        const userMessage = { text: chatInput, sender: 'user' };
+        setChatMessages([...chatMessages, userMessage]);
+        setChatInput('');
+        setChatLoading(true);
+
+        const botResponse = await fetchGeminiChatResponse(user, chatInput, apiKey);
+        const botMessage = { text: botResponse, sender: 'bot' };
+        setChatMessages(prev => [...prev, botMessage]);
+        setChatLoading(false);
+      };
+
+      const parseImpact = (impact) => {
+        const match = impact.match(/^(\d+) (\w+) puanı$/);
+        if (match) {
+          const points = parseInt(match[1], 10);
+          const type = match[2];
+          if (['karbon', 'su', 'enerji'].includes(type)) {
+            return { points, type };
+          }
+        }
+        console.error('Invalid impact format:', impact);
+        return null;
+      };
+
+      const onComplete = (taskId) => {
+        const task = user.suggestions.find(s => s.id === taskId);
+        if (!task) return;
+
+        const impactData = parseImpact(task.impact);
+        if (!impactData) return;
+
+        const { points, type } = impactData;
+        let updatedUser = { ...user };
+
+        if (type === 'karbon') {
+          updatedUser.carbonpoints += points;
+          const currentWeekIndex = updatedUser.carbonFootprint.length - 1;
+          updatedUser.carbonFootprint[currentWeekIndex] = Math.max(0, updatedUser.carbonFootprint[currentWeekIndex] - points);
+        } else if (type === 'su') {
+          updatedUser.waterpoints += points;
+          const currentWeekIndex = updatedUser.waterFootprint.length - 1;
+          updatedUser.waterFootprint[currentWeekIndex] = Math.max(0, updatedUser.waterFootprint[currentWeekIndex] - points);
+        } else if (type === 'enerji') {
+          updatedUser.energypoints += points;
+        }
+
+        updatedUser.suggestions = updatedUser.suggestions.filter(s => s.id !== taskId);
+        setUserState(updatedUser);
+        setUser(updatedUser);
+      };
+
+      // Her görev için ayrı tamamla fonksiyonları:
+      const handleTaskCompletion = () => {
+        const task = {
+          id: Date.now(),
+          text: translate("singleUseTaskText"),
+          completedAt: new Date(),
+        };
+
+        const updatedCompletedTasks = [...completedTasks, task];
+        setCompletedTasks(updatedCompletedTasks);
+        localStorage.setItem("completedTasks", JSON.stringify(updatedCompletedTasks));
+
+        const updatedUser = { ...user };
+        updatedUser.carbonpoints += 6;
+        updatedUser.waterpoints += 6;
+        updatedUser.energypoints += 6;
+        setUserState(updatedUser);
+        setUser(updatedUser);
+
+        setNotification(translate("congrats1"));
+
+        setIsTaskVisible(false);
+        setTimeout(() => {
+          setIsTaskVisible(true);
+        }, 7 * 24 * 60 * 60 * 1000);
+      };
+      const handleReuseTaskCompletion = () => {
+        const task = {
+          id: Date.now(),
+          text: translate("singleUseTaskText"),
+          completedAt: new Date(),
+        };
+
+        const updatedCompletedTasks = [...completedTasks, task];
+        setCompletedTasks(updatedCompletedTasks);
+        localStorage.setItem("completedTasks", JSON.stringify(updatedCompletedTasks));
+
+        const updatedUser = { ...user };
+        updatedUser.carbonpoints += 6;
+        updatedUser.waterpoints += 6;
+        updatedUser.energypoints += 7;
+        setUserState(updatedUser);
+        setUser(updatedUser);
+
+        setNotification(translate("congrats1"));
+
+        setIsReuseTaskVisible(false);
+        setTimeout(() => {
+          setIsReuseTaskVisible(true);
+        }, 7 * 24 * 60 * 60 * 1000);
+      };
+      const handleGlassTaskCompletion = () => {
+        const task = {
+          id: Date.now(),
+          text: translate("reuseTaskText"),
+          completedAt: new Date(),
+        };
+        const updatedCompletedTasks = [...completedTasks, task];
+        setCompletedTasks(updatedCompletedTasks);
+        localStorage.setItem("completedTasks", JSON.stringify(updatedCompletedTasks));
+        setIsGlassTaskVisible(false);
+        setTimeout(() => setIsGlassTaskVisible(true), 7 * 24 * 60 * 60 * 1000);
+      };
+      const handleBagTaskCompletion = () => {
+        const task = {
+          id: Date.now(),
+         text: translate("bagTaskText"),
+          completedAt: new Date(),
+        };
+
+        const updatedCompletedTasks = [...completedTasks, task];
+        setCompletedTasks(updatedCompletedTasks);
+        localStorage.setItem("completedTasks", JSON.stringify(updatedCompletedTasks));
+
+        const updatedUser = { ...user };
+        updatedUser.carbonpoints += 7;
+        updatedUser.waterpoints += 7;
+        updatedUser.energypoints += 6;
+        setUserState(updatedUser);
+        setUser(updatedUser);
+
+         setNotification(translate("congrats3"));
+
+        setIsBagTaskVisible(false);
+        setTimeout(() => {
+          setIsBagTaskVisible(true);
+        }, 7 * 24 * 60 * 60 * 1000);
+      };
+      const handleBottleTaskCompletion = () => {
+        const task = {
+          id: Date.now(),
+          text: translate("bottleTaskText"),
+        };
+
+        const updatedCompletedTasks = [...completedTasks, task];
+        setCompletedTasks(updatedCompletedTasks);
+        localStorage.setItem("completedTasks", JSON.stringify(updatedCompletedTasks));
+
+        const updatedUser = { ...user };
+        updatedUser.carbonpoints += 6;
+        updatedUser.waterpoints += 5;
+        updatedUser.energypoints += 6;
+        setUserState(updatedUser);
+        setUser(updatedUser);
+
+        setNotification(translate("congrats4"));
+
+        setIsBottleTaskVisible(false);
+        setTimeout(() => {
+          setIsBottleTaskVisible(true);
+        }, 7 * 24 * 60 * 60 * 1000);
+      };
+      const handleWasteTaskCompletion = () => {
+        const task = {
+          id: Date.now(),
+          text: translate("wasteTaskText"),
+          completedAt: new Date(),
+        };
+
+        const updatedCompletedTasks = [...completedTasks, task];
+        setCompletedTasks(updatedCompletedTasks);
+        localStorage.setItem("completedTasks", JSON.stringify(updatedCompletedTasks));
+
+        const updatedUser = { ...user };
+        updatedUser.carbonpoints += 8;
+        updatedUser.waterpoints += 6;
+        updatedUser.energypoints += 7;
+        setUserState(updatedUser);
+        setUser(updatedUser);
+
+        setNotification( setNotification(translate("congrats5")));
+
+        setIsWasteTaskVisible(false);
+        setTimeout(() => {
+          setIsWasteTaskVisible(true);
+        }, 7 * 24 * 60 * 60 * 1000);
+      };
+
+      React.useEffect(() => {
+        const filteredTasks = completedTasks.filter(
+          (t) => new Date() - new Date(t.completedAt) < 7 * 24 * 60 * 60 * 1000
+        );
+        setCompletedTasks(filteredTasks);
+        localStorage.setItem("completedTasks", JSON.stringify(filteredTasks));
+      }, [completedTasks]);
+
+      // Kullanıcı ayarları değiştiğinde tüketimi güncelle
+      React.useEffect(() => {
+        const updatedConsumption = calculateDynamicConsumption(user);
+        if (JSON.stringify(user.consumption) !== JSON.stringify(updatedConsumption)) {
+          const updatedUser = {
+            ...user,
+            consumption: updatedConsumption
+          };
+          setUserState(updatedUser);
+          setUser(updatedUser);
+        }
+      }, [user.livingStandard, user.habits]);
+
+      return (
+        <section className="py-10 px-6 max-w-6xl mx-auto">
+          {notification && (
+            <Notification 
+              message={notification} 
+              onClose={() => setNotification(null)} 
+            />
+          )}
+          <h2 className="text-3xl font-bold text-center mb-10 text-green-800">{translate("greeting")}, {user.name}!</h2>
+
+          
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-white p-6 rounded-xl shadow-md">
+              <h3 className="text-xl font-bold text-green-800 mb-4">{translate("profile")} {translate("settings")}</h3>
+              <p className="mb-2"><span className="font-semibold">{translate("userName")}:</span> {user.name}</p>
+              <p className="mb-2"><span className="font-semibold">{translate("email")}:</span> {user.email}</p>
+              <p className="mb-2"><span className="font-semibold">{translate("city")}:</span> {user.city}</p>
+              <a href="settings.html" className="text-green-600 hover:text-green-700 font-semibold">{translate("updateProfile")} →</a>
+            </div>
+
+            <div className="space-y-6">
+              <StatsCard title="Puanlar" stats={[
+                { label: translate("carbon"), value: user.carbonpoints },
+                { label: translate("water"), value: user.waterpoints },
+                { label: translate("energy"), value: user.energypoints }
+              ]} />
+              <StatsCard title="Seviye" stats={[
+                { label: translate("level"), value: user.level },
+                { label: translate("ranking"), value: `#${user.ranking}` }
+              ]} />
+            </div>
+          </div>
+          
+          <div className="my-10">
+            <h3 className="text-2xl font-bold text-center text-green-800 mb-6">{translate("averageConsumption")}</h3>
+            <Consumption user={user} />
+          </div>
+
+          <div className="my-10 grid md:grid-cols-2 gap-8">
+            <CanvasBox title={translate("carbonChart")} id="carbonChart" />
+            <CanvasBox title={translate("waterChart")} id="waterChart" />
+
+          </div>
+
+          {isTaskVisible && (
+            <div className="my-10">
+              <div className="bg-white p-6 rounded-xl shadow-md">
+                <h3 className="text-2xl font-bold text-center text-green-800 mb-6">{translate("ecoTaskTitle")}</h3>
+                <p className="text-lg font-semibold text-green-700 mb-4">{translate("ecoTaskQuestion1")}</p>
+                <h4 className="text-lg font-semibold text-green-700">{translate("task")}</h4>
+                <p className="text-gray-600">{translate("ecoTaskAction1")}</p>
+                <h4 className="text-lg font-semibold text-green-700">{translate("Example")}</h4>
+                <p className="text-gray-600">{translate("ecoTaskExample1")}</p>
+                <button
+                  onClick={handleTaskCompletion}
+                  className="bg-green-600 text-white px-6 py-3 rounded-full hover:bg-green-700 transition-all duration-300 shadow-md"
+                >
+                  {translate("didIt")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isReuseTaskVisible && (
+            <div className="my-10">
+              <div className="bg-white p-6 rounded-xl shadow-md">
+                <h3 className="text-2xl font-bold text-center text-green-800 mb-6">{translate("ecoTaskTitle")}</h3>
+                <p className="text-lg font-semibold text-green-700 mb-4">{translate("ecoTaskQuestion2")}</p>
+                <h4 className="text-lg font-semibold text-green-700">{translate("task")}</h4>
+                <p className="text-gray-600">{translate("ecoTaskAction2")}</p>
+                <h4 className="text-lg font-semibold text-green-700">{translate("Example")}</h4>
+                <p className="text-gray-600">{translate("ecoTaskExample2")}</p>
+                <button
+                  onClick={handleReuseTaskCompletion}
+                  className="bg-green-600 text-white px-6 py-3 rounded-full hover:bg-green-700 transition-all duration-300 shadow-md"
+                >
+                  {translate("didIt")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isGlassTaskVisible && (
+            <div className="my-10">
+              <div className="bg-white p-6 rounded-xl shadow-md">
+                <h3 className="text-2xl font-bold text-center text-green-800 mb-6">{translate("ecoTaskTitle")}</h3>
+                <p className="text-lg font-semibold text-green-700 mb-4">{translate("ecoTaskQuestion3")}</p>
+                <h4 className="text-lg font-semibold text-green-700">{translate("task")}</h4>
+                <p className="text-gray-600">{translate("ecoTaskAction3")}</p>
+                <h4 className="text-lg font-semibold text-green-700">{translate("Example")}</h4>
+                <p className="text-gray-600">{translate("ecoTaskExample3")}</p>
+                <button
+                  onClick={handleGlassTaskCompletion}
+                  className="bg-green-600 text-white px-6 py-3 rounded-full hover:bg-green-700 transition-all duration-300 shadow-md"
+                >
+                  {translate("didIt")}
+                </button>
+              </div>
+            </div>
+          )}
+
+         {isBagTaskVisible && (
+            <div className="my-10">
+              <div className="bg-white p-6 rounded-xl shadow-md">
+                <h3 className="text-2xl font-bold text-center text-green-800 mb-6">{translate("ecoTaskTitle")}</h3>
+                <p className="text-lg font-semibold text-green-700 mb-4">{translate("ecoTaskQuestion4")}</p>
+                <h4 className="text-lg font-semibold text-green-700">{translate("task")}</h4>
+                <p className="text-gray-600">{translate("ecoTaskAction4")}</p>
+                <h4 className="text-lg font-semibold text-green-700">{translate("Example")}</h4>
+                <p className="text-gray-600">{translate("ecoTaskExample4")}</p>
+                <button
+                  onClick={handleBagTaskCompletion}
+                  className="bg-green-600 text-white px-6 py-3 rounded-full hover:bg-green-700 transition-all duration-300 shadow-md"
+                >
+                  {translate("didIt")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isBottleTaskVisible && (
+            <div className="my-10">
+              <div className="bg-white p-6 rounded-xl shadow-md">
+                <h3 className="text-2xl font-bold text-center text-green-800 mb-6">{translate("ecoTaskTitle")}</h3>
+                <p className="text-lg font-semibold text-green-700 mb-4">{translate("ecoTaskQuestion5")}</p>
+                <h4 className="text-lg font-semibold text-green-700">{translate("task")}</h4>
+                <p className="text-gray-600">{translate("ecoTaskAction5")}</p>
+                <h4 className="text-lg font-semibold text-green-700">{translate("Example")}</h4>
+                <p className="text-gray-600">{translate("ecoTaskExample5")}</p>
+                <button
+                  onClick={handleBottleTaskCompletion}
+                  className="bg-green-600 text-white px-6 py-3 rounded-full hover:bg-green-700 transition-all duration-300 shadow-md"
+                >
+                  {translate("didIt")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isWasteTaskVisible && (
+            <div className="my-10">
+              <div className="bg-white p-6 rounded-xl shadow-md">
+                <h3 className="text-2xl font-bold text-center text-green-800 mb-6">{translate("ecoTaskTitle")}</h3>
+                <p className="text-lg font-semibold text-green-700 mb-4">{translate("ecoTaskQuestion6")}</p>
+                <h4 className="text-lg font-semibold text-green-700">{translate("task")}</h4>
+                <p className="text-gray-600">{translate("ecoTaskAction6")}</p>
+                <h4 className="text-lg font-semibold text-green-700">{translate("Example")}</h4>
+                <p className="text-gray-600">{translate("ecoTaskExample6")}</p>
+                <button
+                  onClick={handleWasteTaskCompletion}
+                  className="bg-green-600 text-white px-6 py-3 rounded-full hover:bg-green-700 transition-all duration-300 shadow-md"
+                >
+                  {translate("didIt")}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="my-10">
+            <h3 className="text-lg font-semibold text-white bg-green-600 px-4 py-2 rounded-lg inline-block">{translate("pastTasks")}</h3>
+            <div className="flex justify-between items-center mb-4">
+              <button
+                onClick={() => {
+                  setCompletedTasks([]);
+                  localStorage.removeItem("completedTasks");
+                }}
+                className="bg-red-600 text-white px-4 py-2 rounded-full hover:bg-red-700 transition-all duration-300 shadow-md ml-auto"
+                style={{ minWidth: 90 }}
+              >
+                {translate("clear")}
+              </button>
+            </div>
+            <div className="grid gap-6">
+              {completedTasks.length > 0 ? (
+                completedTasks.map((task) => (
+                  <div key={task.id} className="bg-gray-100 p-6 rounded-xl shadow-md">
+                    <p className="text-gray-600">{task.text}</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      {translate("tmmlmtrh")} {new Date(task.completedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                ))
+              ) : (
+               <p>{translate("noTasks")}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="my-10">
+            <h3 className="text-2xl font-bold text-center text-green-800 mb-6">{translate("chatTitle")}</h3>
+            <ChatBox
+              messages={chatMessages}
+              input={chatInput}
+              setInput={setChatInput}
+              onSend={handleSendMessage}
+              loading={chatLoading}
+              chatContainerRef={chatContainerRef}
+            />
+          </div>
+        </section>
+      );
+    }
+
+    function StatsCard({ title, stats }) {
+      return (
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <h4 className="text-lg font-semibold text-green-700 mb-4">{title}</h4>
+          <div className="space-y-3">
+            {stats.map((stat, index) => (
+              <div key={index} className="flex justify-between items-center">
+                <span className="text-gray-600">{stat.label}</span>
+                <span className="font-semibold text-green-600">{stat.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function Consumption({ user }) {
+      const types = ["daily", "weekly", "monthly"]; 
+      const labels = { 
+  daily: translate("daily"), 
+  weekly: translate("weekly"), 
+  monthly: translate("monthly") 
+};
+
+
+      return (
+        <div className="grid md:grid-cols-3 gap-6">
+          {types.map(type => (
+            <div key={type} className="bg-white p-6 rounded-xl shadow-md text-center">
+              <h4 className="text-lg font-semibold text-green-700 mb-2">{labels[type]} {translate("ktkt")}</h4>
+              <p>{translate("krbn")}:{user.consumption[type].carbon}kg</p>
+              <p>{translate("elkrt")}:{user.consumption[type].electricity}kWh</p>
+              <p>{translate("su")}:{user.consumption[type].water} L</p>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    function calculateDynamicConsumption(user) {
+  const { livingStandard, habits = {} } = user;
+
+  // Başlangıç değerleri (örnek)
+  let daily = {
+    carbon: 5,
+    electricity: 4,
+    water: 120
+  };
+
+  // Yaşam standardına göre
+  if (livingStandard === translate("high")) {
+    daily.carbon += 2;
+    daily.electricity += 3;
+    daily.water += 50;
+  } else if (livingStandard === translate("low")) {
+    daily.carbon -= 1;
+    daily.electricity -= 1;
+    daily.water -= 30;
+  }
+
+  // Günlük duş süresi
+  const showerTime = parseInt(habits.dailyShowerTime || "5", 10);
+  daily.water += (showerTime - 5) * 5; // her ek dakika için 5L ekle
+
+  // Aydınlatma
+  if (habits.lightingType === "LED") daily.electricity -= 0.5;
+  if (habits.lightingType === translate("incandescent")) daily.electricity += 1;
+
+  // Ulaşım tipi
+  if (habits.transportationType === translate("privateVehicle")) daily.carbon += 2;
+  if (habits.transportationType === translate("publicTransport")) daily.carbon -= 1;
+
+  // Haftalık ve aylık veriler hesapla
+  const weekly = {
+    carbon: daily.carbon * 7,
+    electricity: daily.electricity * 7,
+    water: daily.water * 7
+  };
+
+  const monthly = {
+    carbon: daily.carbon * 30,
+    electricity: daily.electricity * 30,
+    water: daily.water * 30
+  };
+
+  return { daily, weekly, monthly };
+}
+
+
+    function CanvasBox({ title, id }) {
+      return (
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <h4 className="text-lg font-semibold text-green-700 mb-4">{title}</h4>
+          <canvas id={id}></canvas>
+        </div>
+      );
+    }
+
+    function SuggestionList({ suggestions, onComplete }) {
+      return (
+        <div className="grid gap-6">
+          {suggestions.map(({ id, text, impact }) => (
+            <div key={id} className="bg-green-50 p-6 rounded-xl shadow-md animate-fade flex justify-between items-center">
+              <div>
+                <p className="text-gray-600">{text}</p>
+                <p className="text-green-600 font-semibold mt-2">Etki: {impact}</p>
+              </div>
+              <button onClick={() => onComplete(id)} className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Tamamla</button>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+     function ChatBox({ messages, input, setInput, onSend, loading, chatContainerRef }) {
+      return (
+        <div className="bg-white p-6 rounded-xl shadow-md">
+          <div
+            ref={chatContainerRef}
+            className="h-64 overflow-y-auto mb-4 p-4 bg-green-50 rounded-lg"
+          >
+            {messages.length === 0 && (
+              <p> {translate("world")} 😊</p>
+            )}
+            {messages.map((msg, index) => (
+              <div
+                key={index}
+                className={`mb-4 flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-xs p-3 rounded-lg ${
+                    msg.sender === 'user'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-green-200 text-gray-800'
+                  }`}
+                >
+                  {msg.text}
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div >{translate("yşldsdşny")}</div>
+            )}
+          </div>
+          <div className="flex">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && onSend()}
+              placeholder= {translate("gdgd")}
+              className="flex-1 p-3 border rounded-l-lg focus:outline-none"
+            />
+            <button
+              onClick={onSend}
+              disabled={loading}
+              className={`bg-green-600 text-white px-4 py-3 rounded-r-lg hover:bg-green-700 ${
+                loading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              {translate("gnd")}
+            </button>
+          </div>
+        </div>
+      );
+    }
+    function MapSection() {
+  React.useEffect(() => {
+    // Prevent double initialization if component is re-mounted
+    if (window._leafletMap) {
+      window._leafletMap.remove();
+      window._leafletMap = null;
+    }
+
+    const locations = [
+      [41.0082, 28.9784], // İstanbul
+      [41.0134, 29.1478],
+      [40.9745, 29.0932],
+      [41.0532, 28.8804],
+      [41.0276, 28.7203],
+      [40.9837, 29.1786],
+      [39.8754, 32.8602], // Ankara
+      [39.9876, 32.7354],
+      [39.9658, 32.5803],
+      [39.8932, 32.6557],
+      [39.9751, 32.6934],
+      [38.4667, 27.2389], // İzmir
+      [38.4983, 27.0521],
+      [38.4365, 27.2623],
+      [38.3982, 27.0856],
+      [38.4678, 27.2987],
+      [40.2023, 29.0421], // Bursa
+      [40.2376, 29.0134],
+      [40.1912, 29.0987],
+      [40.2234, 28.9145],
+      [40.1889, 29.1326],
+      [36.9958, 35.3214], // Adana
+      [36.9723, 35.3056],
+      [36.9765, 35.2832],
+      [36.9894, 35.2947],
+      [36.9947, 35.3521],
+      [37.8503, 32.5567], // Konya
+      [37.9132, 32.5178],
+      [37.9045, 32.5489],
+      [37.9901, 32.5763],
+      [37.9156, 32.5324],
+      [36.9912, 35.3213], // Adana: Seyhan, Çınarlı Mahallesi (Atatürk Parkı yakınında)
+      [37.0467, 35.3065], // Adana: Çukurova, Güzelyalı Mahallesi (Turgut Özal Bulvarı)
+      [37.0742, 36.2479], // Osmaniye
+      [37.9901, 32.5763],
+      [37.9156, 32.5324],
+      [36.9912, 35.3213], // Adana: Seyhan, Çınarlı Mahallesi (Atatürk Parkı yakınında)
+      [37.0467, 35.3065], // Adana: Çukurova, Güzelyalı Mahallesi (Turgut Özal Bulvarı)
+      [37.0742, 36.2479], // Osmaniye: Merkez, Cumhuriyet Mahallesi (Belediye önü)
+      [37.0705, 36.2512], // Osmaniye: Rızaiye Mahallesi (Osmaniye Çarşı)
+      [36.2021, 36.1607], // Hatay: Antakya, Atatürk Caddesi (Merkez)
+      [36.5875, 36.1732], // Hatay: İskenderun, Sahil Yolu (Belediye Parkı)
+      [37.0667, 37.3833], // Gaziantep: Şehitkamil, 25 Aralık Mahallesi (Primemall AVM yakınında)
+      [37.0135, 37.4387], // Gaziantep: Şahinbey, Mavikent Mahallesi (Mavikent Çarşı)
+      [36.8012, 34.6345], // Mersin: Mezitli, Viranşehir Mahallesi (Sahil Yolu)
+      [36.7865, 34.5873], // Mersin: Yenişehir, Çiftlikköy Mahallesi (Mersin Üniversitesi yakınında)
+      [36.7161, 37.1150], // Kilis: Merkez, Cumhuriyet Meydanı
+      [36.7205, 37.1123], // Kilis: Namık Ünler Paşa Mahallesi (Belediye Parkı)
+      [37.5753, 36.9147], // Kahramanmaraş: Onikişubat, Trabzon Bulvarı (Kahramanmaraş Piazza AVM)
+      [37.5832, 36.9265]
+    ];
+
+    const map = L.map("map", {
+      center: [39.0, 35.0],
+      zoom: 6,
+      zoomControl: true,
+      attributionControl: true
+    });
+
+    window._leafletMap = map;
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap contributors"
+    }).addTo(map);
+
+    const bounds = L.latLngBounds(locations);
+    locations.forEach(([lat, lng]) => {
+      L.marker([lat, lng]).addTo(map).bindPopup("♻️ Geri Dönüşüm Kutusu");
+    });
+    map.fitBounds(bounds);
+
+    // Cleanup on unmount
+    return () => {
+      map.remove();
+      window._leafletMap = null;
+    };
+  }, []);
+
+  return (
+    <section className="py-16 px-6 max-w-4xl mx-auto">
+      <h2 className="text-2xl font-bold text-green-800 text-center mb-4">{translate("mapTitle")}</h2>
+      <div id="map" style={{ height: "400px", borderRadius: "12px" }}></div>
+    </section>
+  );
+}
+
+
+
+    function App() {
+      const [currentLang, setCurrentLang] = React.useState(() => 
+        localStorage.getItem("language") || "tr"
+      );
+
+      // Global translate fonksiyonu
+      const translate = React.useCallback((key) => {
+        const keys = key.split(".");
+        let value = translations[currentLang];
+        for (let k of keys) {
+          if (value && value[k]) value = value[k];
+          else return key;
+        }
+        return value;
+      }, [currentLang]);
+
+      // Dil değişim fonksiyonu
+      const toggleLang = React.useCallback((newLang) => {
+        setCurrentLang(newLang);
+        localStorage.setItem("language", newLang);
+        window.location.reload(); // Dil değişince sayfayı yenile
+      }, []);
+
+      // İlk yüklemede kullanıcı verisi kontrolü
+      React.useEffect(() => {
+        if (!localStorage.getItem("ecoSimUser")) {
+          localStorage.setItem("ecoSimUser", JSON.stringify(userTemplate));
+        }
+      }, []);
+
+      return (
+        <React.Fragment>
+          <Navbar currentLang={currentLang} toggleLang={toggleLang} translate={translate} />
+          <Profile currentLang={currentLang} translate={translate} />
+          <MapSection translate={translate} />
+        </React.Fragment>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
+

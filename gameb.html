@@ -1,0 +1,684 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atık Yeniden Tasarım Yarışı - Hackathon</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <style>
+        /* Derlenmiş Tailwind CSS ve özel stiller (üretim için optimize edilmiş) */
+        :root {
+            --green-600: #15803d;
+            --green-700: #166534;
+            --blue-500: #3b82f6;
+            --blue-600: #2563eb;
+            --gray-100: #f3f4f6;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-50: #f9fafb;
+            --purple-500: #8b5cf6;
+            --purple-600: #7c3aed;
+            --red-500: #ef4444;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--gray-100);
+            transition: all 0.3s;
+        }
+        .max-w-5xl { max-width: 1280px; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        .p-6 { padding: 1.5rem; }
+        .bg-white { background-color: #fff; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .text-4xl { font-size: 2.25rem; }
+        .font-bold { font-weight: 700; }
+        .text-green-700 { color: var(--green-700); }
+        .text-gray-600 { color: var(--gray-600); }
+        .mt-2 { margin-top: 0.5rem; }
+        .bg-green-600 { background-color: var(--green-600); }
+        .text-white { color: #fff; }
+        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        .rounded-md { border-radius: 0.375rem; }
+        .hover\:bg-green-700:hover { background-color: var(--green-700); }
+        .transition { transition: all 0.2s; }
+        .hidden { display: none; }
+        .space-y-6 > * + * { margin-top: 1.5rem; }
+        .block { display: block; }
+        .text-sm { font-size: 0.875rem; }
+        .font-medium { font-weight: 500; }
+        .text-gray-700 { color: var(--gray-700); }
+        .w-full { width: 100%; }
+        .mt-1 { margin-top: 0.25rem; }
+        .p-2 { padding: 0.5rem; }
+        .border { border: 1px solid #e5e7eb; }
+        .flex { display: flex; }
+        .space-x-2 > * + * { margin-left: 0.5rem; }
+        .space-x-4 > * + * { margin-left: 1rem; }
+        .bg-blue-500 { background-color: var(--blue-500); }
+        .hover\:bg-blue-600:hover { background-color: var(--blue-600); }
+        .bg-purple-500 { background-color: var(--purple-500); }
+        .hover\:bg-purple-600:hover { background-color: var(--purple-600); }
+        .bg-gray-500 { background-color: #6b7280; }
+        .hover\:bg-gray-600:hover { background-color: #4b5563; }
+        .text-lg { font-size: 1.125rem; }
+        .font-semibold { font-weight: 600; }
+        .bg-gray-50 { background-color: var(--gray-50); }
+        .mb-4 { margin-bottom: 1rem; }
+        .text-center { text-align: center; }
+        .grid { display: grid; }
+        .grid-cols-1 { grid-template-columns: 1fr; }
+        .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .gap-4 { gap: 1rem; }
+        .text-2xl { font-size: 1.5rem; }
+        .border-b { border-bottom: 1px solid #e5e7eb; }
+        .justify-between { justify-content: space-between; }
+        .items-center { align-items: center; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .text-blue-500 { color: #3b82f6; }
+        .dark-mode {
+            background-color: #1a202c;
+            color: #e2e8f0;
+        }
+        .dark-mode .bg-white { background-color: #2d3748; }
+        .dark-mode .text-gray-600 { color: #a0aec0; }
+        .dark-mode .bg-gray-50 { background-color: #4a5568; }
+        .comment:hover .delete-comment { display: inline-block; }
+        .delete-comment { display: none; }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .dark-mode .modal-content { background-color: #2d3748; }
+        .cursor-pointer { cursor: pointer; }
+        .project-card {
+            transition: transform 0.2s;
+        }
+        .project-card:hover {
+            transform: scale(1.02);
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading::before {
+            content: '';
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+
+    <div class="max-w-5xl mx-auto p-6">
+        <!-- Başlık ve Kontroller -->
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-4xl font-bold text-green-700">Atık Yeniden Tasarım Yarışı</h1>
+                <p class="text-gray-600 mt-2">Sanayi atıklarından yenilikçi çözümler üret, çevreye katkıda bulun!</p>
+            </div>
+            <div class="flex space-x-4">
+                <a href="profile.html">Profile Dön</a>
+                <button id="create-project" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition">Yeni Proje Oluştur</button>
+            </div>
+        </header>
+        
+        
+
+        <!-- İstatistik Paneli -->
+        <section id="stats" class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-2xl font-semibold text-green-700">İstatistikler</h2>
+            <div class="grid grid-cols-3 gap-4 mt-4">
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-green-600" id="total-projects">0</p>
+                    <p class="text-gray-600">Toplam Proje</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-green-600" id="total-likes">0</p>
+                    <p class="text-gray-600">Toplam Beğeni</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-green-600" id="total-comments">0</p>
+                    <p class="text-gray-600">Toplam Yorum</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Proje Gönderme Formu -->
+        <section id="project-submission" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden">
+            <p class="text-gray-600 mb-4">Bir atık türü seç, geri dönüşüm projeni tarif et ve topluluğa katkıda bulun!</p>
+            <div class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Takım Adı (Opsiyonel):</label>
+                    <input type="text" id="team-name" placeholder="Takım adınızı girin" class="w-full mt-1 p-2 border rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Katılımcı Adları:</label>
+                    <input type="text" id="player-name" placeholder="Adınızı veya takım üyelerini girin (örn: Ali, Veli)" class="w-full mt-1 p-2 border rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Atık Türü:</label>
+                    <div class="flex space-x-2">
+                        <select id="waste-type" class="w-full mt-1 p-2 border rounded-md">
+                            <option value="">Seçiniz</option>
+                            <option value="industrial-plastic">Endüstriyel Plastik</option>
+                            <option value="metal-scrap">Metal Hurda</option>
+                            <option value="wooden-pallet">Ahşap Palet</option>
+                            <option value="chemical-container">Kimyasal Kaplar</option>
+                            <option value="textile-waste">Tekstil Artıkları</option>
+                            <option value="electronic-waste">Elektronik Atık</option>
+                            <option value="glass-scrap">Cam Hurda</option>
+                            <option value="concrete-waste">Beton Atık</option>
+                            <option value="industrial-oil">Endüstriyel Yağ Atıkları</option>
+                            <option value="tire-waste">Lastik Atık</option>
+                            <option value="paper-cardboard">Kağıt/Karton Hurda</option>
+                            <option value="organic-industrial">Organik Sanayi Atığı</option>
+                        </select>
+                        <button id="random-waste" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Rastgele Seç</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Proje Fikrin:</label>
+                    <textarea id="project-idea" rows="5" placeholder="Projenizi tarif edin (çevresel fayda, uygulanabilirlik, yaratıcılık)" class="w-full mt-1 p-2 border rounded-md"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Proje Görseli (Opsiyonel):</label>
+                    <input type="file" id="project-image" accept="image/*" class="mt-1">
+                    <p class="text-sm text-gray-500 mt-1">Görsel yüklemek projenizi görselleştirmek için harika bir yol!</p>
+                </div>
+                <div class="flex space-x-4">
+                    <button id="inspire-me" class="bg-purple-500 text-white px-4 py-2 rounded-md hover:bg-purple-600">İlham Al</button>
+                    <button id="submit-project" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition">Projeyi Gönder</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Topluluk Projeleri -->
+        <section id="community-projects" class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-2xl font-semibold text-green-700">Topluluk Projeleri</h2>
+            <p class="text-gray-600 mb-4">Herkesin yaratıcı geri dönüşüm projelerini keşfet, beğen ve yorum yap!</p>
+            <div class="flex space-x-4 mb-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700">Proje Ara:</label>
+                    <input type="text" id="project-search" placeholder="Proje adı veya atık türü ara..." class="w-full mt-1 p-2 border rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Atık Türüne Göre Filtrele:</label>
+                    <select id="community-filter" class="mt-1 p-2 border rounded-md">
+                        <option value="all">Tümü</option>
+                        <option value="industrial-plastic">Endüstriyel Plastik</option>
+                        <option value="metal-scrap">Metal Hurda</option>
+                        <option value="wooden-pallet">Ahşap Palet</option>
+                        <option value="chemical-container">Kimyasal Kaplar</option>
+                        <option value="textile-waste">Tekstil Artıkları</option>
+                        <option value="electronic-waste">Elektronik Atık</option>
+                        <option value="glass-scrap">Cam Hurda</option>
+                        <option value="concrete-waste">Beton Atık</option>
+                        <option value="industrial-oil">Endüstriyel Yağ Atıkları</option>
+                        <option value="tire-waste">Lastik Atık</option>
+                        <option value="paper-cardboard">Kağıt/Karton Hurda</option>
+                        <option value="organic-industrial">Organik Sanayi Atığı</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Sırala:</label>
+                    <select id="community-sort" class="mt-1 p-2 border rounded-md">
+                        <option value="score-desc">Puana Göre (Yüksekten Düşüğe)</option>
+                        <option value="score-asc">Puana Göre (Düşükten Yükseğe)</option>
+                        <option value="date-desc">Tarihe Göre (Yeniden Eskiye)</option>
+                        <option value="likes-desc">Beğeniye Göre (Çoktan Aza)</option>
+                    </select>
+                </div>
+            </div>
+            <div id="project-list" class="grid grid-cols-1 gap-4"></div>
+        </section>
+    </div>
+
+    <script>
+        // XSS önleme için sanitize fonksiyonu
+        function sanitizeInput(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // Örnek ilham fikirleri
+        const inspirationIdeas = [
+            "Endüstriyel plastikleri eriterek modüler mobilya üretin.",
+            "Metal hurdalardan sanatsal bahçe heykelleri tasarlayın.",
+            "Ahşap paletleri kullanarak sürdürülebilir ev yalıtım panelleri yapın.",
+            "Elektronik atıklardan geri dönüştürülmüş devre kartı sanat eserleri oluşturun."
+        ];
+
+        // Bildirim izni isteme
+        function requestNotificationPermission() {
+            if (Notification.permission !== 'granted') {
+                Notification.requestPermission();
+            }
+        }
+
+        // Bildirim gösterme
+        function showNotification(title, body) {
+            if (Notification.permission === 'granted') {
+                new Notification(title, { body });
+            }
+        }
+
+        // Demo verileri yükleme
+        function loadDemoData() {
+            if (!localStorage.getItem('projects')) {
+                const demoProjects = [
+                    {
+                        id: Date.now() - 1000,
+                        teamName: "Yeşil İnovasyon",
+                        playerName: "Ayşe, Mehmet",
+                        wasteType: "industrial-plastic",
+                        projectIdea: "Plastik atıklardan 3D yazıcı filamenti üreterek döngüsel ekonomi oluşturuyoruz.",
+                        image: "",
+                        score: 85,
+                        likes: 12,
+                        comments: [{ author: "Zeynep", text: "Harika bir fikir!", likes: 3 }],
+                        date: new Date().toISOString()
+                    },
+                    {
+                        id: Date.now() - 2000,
+                        teamName: "Eko Tasarım",
+                        playerName: "Ali",
+                        wasteType: "metal-scrap",
+                        projectIdea: "Metal hurdalardan modüler bisiklet park üniteleri tasarlıyoruz.",
+                        image: "",
+                        score: 90,
+                        likes: 8,
+                        comments: [],
+                        date: new Date(Date.now() - 86400000).toISOString()
+                    }
+                ];
+                localStorage.setItem('projects', JSON.stringify(demoProjects));
+            }
+        }
+
+        // Yeni proje oluşturma formunu göster
+        document.getElementById('create-project').addEventListener('click', () => {
+            const projectSubmission = document.getElementById('project-submission');
+            const communityProjects = document.getElementById('community-projects');
+            if (projectSubmission && communityProjects) {
+                gsap.to(communityProjects, {
+                    opacity: 0,
+                    duration: 0.5,
+                    onComplete: () => {
+                        communityProjects.classList.add('hidden');
+                        projectSubmission.classList.remove('hidden');
+                        gsap.fromTo(projectSubmission, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5 });
+                    }
+                });
+            }
+        });
+
+
+
+
+        // Rastgele atık seçimi
+        document.getElementById('random-waste').addEventListener('click', () => {
+            const wasteTypeSelect = document.getElementById('waste-type');
+            const options = Array.from(wasteTypeSelect.options).map(opt => opt.value).filter(v => v);
+            wasteTypeSelect.value = options[Math.floor(Math.random() * options.length)];
+        });
+
+        // İlham al
+        document.getElementById('inspire-me').addEventListener('click', () => {
+            const projectIdea = document.getElementById('project-idea');
+            const idea = inspirationIdeas[Math.floor(Math.random() * inspirationIdeas.length)];
+            projectIdea.value = idea;
+            gsap.fromTo(projectIdea, { scale: 0.95, opacity: 0.8 }, { scale: 1, opacity: 1, duration: 0.3 });
+        });
+
+        // Proje gönderme
+        document.getElementById('submit-project').addEventListener('click', async () => {
+            const submitButton = document.getElementById('submit-project');
+            submitButton.disabled = true;
+            submitButton.classList.add('loading');
+            submitButton.textContent = 'Gönderiliyor';
+
+            const teamName = sanitizeInput(document.getElementById('team-name').value);
+            const playerName = sanitizeInput(document.getElementById('player-name').value);
+            const wasteType = document.getElementById('waste-type').value;
+            const projectIdea = sanitizeInput(document.getElementById('project-idea').value);
+            const projectImage = document.getElementById('project-image').files[0];
+
+            if (!playerName || !wasteType || !projectIdea) {
+                alert('Lütfen zorunlu alanları doldurun: Katılımcı Adları, Atık Türü ve Proje Fikri!');
+                submitButton.disabled = false;
+                submitButton.classList.remove('loading');
+                submitButton.textContent = 'Projeyi Gönder';
+                return;
+            }
+
+            let imageData = '';
+            if (projectImage) {
+                try {
+                    imageData = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(projectImage);
+                    });
+                } catch (error) {
+                    console.error('Görsel yükleme hatası:', error);
+                }
+            }
+
+            // Basit puanlama simülasyonu
+            const score = Math.min(100, Math.floor(
+                (projectIdea.length / 10) +
+                (imageData ? 20 : 0) +
+                Math.random() * 50
+            ));
+
+            const project = {
+                id: Date.now(),
+                teamName,
+                playerName,
+                wasteType,
+                projectIdea,
+                image: imageData,
+                score,
+                likes: 0,
+                comments: [],
+                date: new Date().toISOString()
+            };
+
+            let projects = JSON.parse(localStorage.getItem('projects')) || [];
+            projects.push(project);
+            localStorage.setItem('projects', JSON.stringify(projects));
+
+            showNotification('Yeni Proje!', `${playerName} yeni bir proje ekledi: ${projectIdea.slice(0, 50)}...`);
+
+            gsap.to('#project-submission', {
+                opacity: 0,
+                y: 50,
+                duration: 0.5,
+                onComplete: () => {
+                    document.getElementById('project-submission').classList.add('hidden');
+                    document.getElementById('community-projects').classList.remove('hidden');
+                    gsap.fromTo('#community-projects', { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5 });
+                    displayProjects();
+                    updateStats();
+                    submitButton.disabled = false;
+                    submitButton.classList.remove('loading');
+                    submitButton.textContent = 'Projeyi Gönder';
+                }
+            });
+        });
+
+        // Projeleri listeleme
+        function displayProjects() {
+            const projectList = document.getElementById('project-list');
+            if (!projectList) {
+                console.error('project-list DOM öğesi bulunamadı');
+                return;
+            }
+            projectList.innerHTML = '';
+            let projects = JSON.parse(localStorage.getItem('projects')) || [];
+            const searchQuery = document.getElementById('project-search').value.toLowerCase();
+            const filter = document.getElementById('community-filter').value;
+            const sort = document.getElementById('community-sort').value;
+
+            // Arama
+            if (searchQuery) {
+                projects = projects.filter(p =>
+                    p.projectIdea.toLowerCase().includes(searchQuery) ||
+                    p.wasteType.toLowerCase().includes(searchQuery) ||
+                    p.playerName.toLowerCase().includes(searchQuery) ||
+                    (p.teamName && p.teamName.toLowerCase().includes(searchQuery))
+                );
+            }
+
+            // Filtreleme
+            if (filter !== 'all') {
+                projects = projects.filter(p => p.wasteType === filter);
+            }
+
+            // Sıralama
+            if (sort === 'score-desc') {
+                projects.sort((a, b) => b.score - a.score);
+            } else if (sort === 'score-asc') {
+                projects.sort((a, b) => a.score - b.score);
+            } else if (sort === 'date-desc') {
+                projects.sort((a, b) => new Date(b.date) - new Date(a.date));
+            } else if (sort === 'likes-desc') {
+                projects.sort((a, b) => b.likes - a.likes);
+            }
+
+            projects.forEach(project => {
+                const projectDiv = document.createElement('div');
+                projectDiv.className = 'project-card bg-gray-50 p-6 rounded-md mb-4 cursor-pointer';
+                projectDiv.setAttribute('data-id', project.id);
+                projectDiv.innerHTML = `
+                    <h3 class="text-lg font-semibold text-green-700">${project.teamName || project.playerName} - ${project.wasteType}</h3>
+                    <p class="text-gray-600 line-clamp-2">${project.projectIdea}</p>
+                    ${project.image ? `<img src="${project.image}" alt="Proje Görseli" class="mt-2 max-w-full h-auto rounded-md" style="max-height: 150px;">` : ''}
+                    <p class="text-sm text-gray-500">Puan: ${project.score} | Beğeni: ${project.likes} | Yorum: ${project.comments.length}</p>
+                `;
+                projectDiv.addEventListener('click', () => showProjectModal(project.id));
+                gsap.from(projectDiv, { opacity: 0, y: 20, duration: 0.5, delay: 0.1 * projects.indexOf(project) });
+                projectList.appendChild(projectDiv);
+            });
+        }
+
+        // Proje detay modalını gösterme
+        function showProjectModal(projectId) {
+            const projects = JSON.parse(localStorage.getItem('projects')) || [];
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+
+            const modal = document.getElementById('project-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalDescription = document.getElementById('modal-description');
+            const modalImage = document.getElementById('modal-image');
+            const modalScore = document.getElementById('modal-score');
+            const modalLikes = document.getElementById('modal-likes');
+            const modalCommentList = document.getElementById('modal-comment-list');
+
+            modalTitle.textContent = `${project.teamName || project.playerName} - ${project.wasteType}`;
+            modalDescription.textContent = project.projectIdea;
+            modalScore.textContent = `Puan: ${project.score}`;
+            modalLikes.textContent = `Beğeni: ${project.likes}`;
+            if (project.image) {
+                modalImage.src = project.image;
+                modalImage.classList.remove('hidden');
+            } else {
+                modalImage.classList.add('hidden');
+            }
+
+            modalCommentList.innerHTML = project.comments.map((c, i) => `
+                <p class="comment text-gray-600"><b>${c.author}</b>: ${c.text} (Beğeni: ${c.likes || 0})
+                    <span class="delete-comment text-red-500 cursor-pointer ml-2" onclick="deleteComment(${project.id}, ${i})">[Sil]</span>
+                    <span class="text-blue-500 cursor-pointer ml-2" onclick="likeComment(${project.id}, ${i})">[Beğen]</span>
+                </p>
+            `).join('');
+
+            document.getElementById('modal-like').onclick = () => likeProject(project.id);
+            document.getElementById('modal-share').onclick = () => shareProject(project.id);
+            document.getElementById('modal-comment-submit').onclick = () => addComment(project.id);
+            document.getElementById('modal-close').onclick = () => {
+                gsap.to(modal, { opacity: 0, duration: 0.3, onComplete: () => modal.classList.add('hidden') });
+            };
+
+            modal.classList.remove('hidden');
+            gsap.fromTo(modal, { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.3 });
+        }
+
+        // İstatistik güncelleme
+        function updateStats() {
+            const projects = JSON.parse(localStorage.getItem('projects')) || [];
+            const totalLikes = projects.reduce((sum, p) => sum + p.likes, 0);
+            const totalComments = projects.reduce((sum, p) => sum + p.comments.length, 0);
+            const totalProjectsEl = document.getElementById('total-projects');
+            const totalLikesEl = document.getElementById('total-likes');
+            const totalCommentsEl = document.getElementById('total-comments');
+            if (totalProjectsEl && totalLikesEl && totalCommentsEl) {
+                totalProjectsEl.textContent = projects.length;
+                totalLikesEl.textContent = totalLikes;
+                totalCommentsEl.textContent = totalComments;
+            }
+        }
+
+        // Beğeni ekleme
+        window.likeProject = function(projectId) {
+            let projects = JSON.parse(localStorage.getItem('projects')) || [];
+            const project = projects.find(p => p.id === projectId);
+            if (project) {
+                project.likes += 1;
+                localStorage.setItem('projects', JSON.stringify(projects));
+                gsap.fromTo(`[data-id="${projectId}"]`, { scale: 1 }, { scale: 1.1, duration: 0.2, yoyo: true, repeat: 1 });
+                displayProjects();
+                updateStats();
+                if (!document.getElementById('project-modal').classList.contains('hidden')) {
+                    showProjectModal(projectId);
+                }
+            }
+        };
+
+        // Yorum beğenme
+        window.likeComment = function(projectId, commentIndex) {
+            let projects = JSON.parse(localStorage.getItem('projects')) || [];
+            const project = projects.find(p => p.id === projectId);
+            if (project) {
+                project.comments[commentIndex].likes = (project.comments[commentIndex].likes || 0) + 1;
+                localStorage.setItem('projects', JSON.stringify(projects));
+                showProjectModal(projectId);
+            }
+        };
+
+        // Proje paylaşma
+        window.shareProject = function(projectId) {
+            const projects = JSON.parse(localStorage.getItem('projects')) || [];
+            const project = projects.find(p => p.id === projectId);
+            if (project) {
+                const shareText = `Atık Yeniden Tasarım Yarışı'nda harika bir proje: ${project.projectIdea.slice(0, 100)}... #SanayiAtıkKahramanları`;
+                const shareUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+                window.open(shareUrl, '_blank');
+            }
+        };
+
+        // Yorum ekleme
+        window.addComment = function(projectId) {
+            const commentInput = document.getElementById('modal-comment-input');
+            const commentText = sanitizeInput(commentInput.value);
+            if (!commentText) {
+                alert('Yorum alanı boş olamaz!');
+                return;
+            }
+
+            let projects = JSON.parse(localStorage.getItem('projects')) || [];
+            const project = projects.find(p => p.id === projectId);
+            if (project) {
+                project.comments.push({
+                    author: sanitizeInput(document.getElementById('player-name').value) || 'Anonim',
+                    text: commentText,
+                    likes: 0
+                });
+                localStorage.setItem('projects', JSON.stringify(projects));
+                commentInput.value = '';
+                showNotification('Yeni Yorum!', `${project.playerName} projenize yorum yaptı!`);
+                showProjectModal(projectId);
+                displayProjects();
+                updateStats();
+            }
+        };
+
+        // Yorum silme
+        window.deleteComment = function(projectId, commentIndex) {
+            let projects = JSON.parse(localStorage.getItem('projects')) || [];
+            const project = projects.find(p => p.id === projectId);
+            if (project) {
+                project.comments.splice(commentIndex, 1);
+                localStorage.setItem('projects', JSON.stringify(projects));
+                showProjectModal(projectId);
+                displayProjects();
+                updateStats();
+            }
+        };
+
+        // Arama, filtreleme ve sıralama olay dinleyicileri
+        const projectSearch = document.getElementById('project-search');
+        const communityFilter = document.getElementById('community-filter');
+        const communitySort = document.getElementById('community-sort');
+        if (projectSearch && communityFilter && communitySort) {
+            projectSearch.addEventListener('input', displayProjects);
+            communityFilter.addEventListener('change', displayProjects);
+            communitySort.addEventListener('change', displayProjects);
+        }
+
+        // Başlangıç işlemleri
+        loadDemoData();
+        requestNotificationPermission();
+        displayProjects();
+        updateStats();
+    </script>
+</body>
+</html>

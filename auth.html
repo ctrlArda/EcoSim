@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EcoSim - Giriş Yap / Kayıt Ol</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body class="bg-green-50 text-gray-900 font-poppins">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    // Language Context
+    const LanguageContext = React.createContext();
+
+    // Translation Data
+    const translations = {
+      tr: {
+        title: "EcoSim - Giriş Yap / Kayıt Ol",
+        navbar: {
+          logoAlt: "Logo",
+          home: "Ana Sayfaya Dön",
+          menuToggle: "Menüyü aç/kapat",
+        },
+        auth: {
+          loginTab: "Giriş Yap",
+          registerTab: "Kayıt Ol",
+          emailLabel: "E-posta",
+          emailPlaceholder: "ornek@ecosim.com",
+          passwordLabel: "Şifre",
+          passwordPlaceholder: "••••••••",
+          usernameLabel: "Kullanıcı Adı",
+          usernamePlaceholder: "ÇevreciKullanıcı",
+          loginButton: "Giriş Yap",
+          registerButton: "Kayıt Ol",
+          noAccount: "Hesabın yok mu?",
+          hasAccount: "Zaten hesabın var mı?",
+          switchToRegister: "Kayıt Ol",
+          switchToLogin: "Giriş Yap",
+          loginSuccess: (email) => `Giriş yapıldı: ${email}`,
+          registerSuccess: (username, email) => `Kayıt olundu: ${username}, ${email}`,
+        },
+        footer: {
+          copyright: "© 2025 EcoSim. Tüm hakları saklıdır.",
+          about: "Hakkımızda",
+          contact: "İletişim",
+        },
+      },
+      en: {
+        title: "EcoSim - Log In / Sign Up",
+        navbar: {
+          logoAlt: "Logo",
+          home: "Return to Home",
+          menuToggle: "Toggle menu",
+        },
+        auth: {
+          loginTab: "Log In",
+          registerTab: "Sign Up",
+          emailLabel: "Email",
+          emailPlaceholder: "example@ecosim.com",
+          passwordLabel: "Password",
+          passwordPlaceholder: "••••••••",
+          usernameLabel: "Username",
+          usernamePlaceholder: "EcoUser",
+          loginButton: "Log In",
+          registerButton: "Sign Up",
+          noAccount: "Don't have an account?",
+          hasAccount: "Already have an account?",
+          switchToRegister: "Sign Up",
+          switchToLogin: "Log In",
+          loginSuccess: (email) => `Logged in: ${email}`,
+          registerSuccess: (username, email) => `Signed up: ${username}, ${email}`,
+        },
+        footer: {
+          copyright: "© 2025 EcoSim. All rights reserved.",
+          about: "About Us",
+          contact: "Contact",
+        },
+      },
+    };
+
+    // Navbar Component
+    function Navbar() {
+      const { language, setLanguage, t } = React.useContext(LanguageContext);
+      const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+
+      const handleLanguageChange = (e) => {
+        const newLanguage = e.target.value;
+        setLanguage(newLanguage);
+        localStorage.setItem("ecoSimLanguage", newLanguage);
+      };
+
+      return (
+        <nav className="flex justify-between items-center px-6 py-4 bg-white shadow-md sticky top-0 z-10 rounded-b-xl">
+          <img src="logo.jpg" alt={t.navbar.logoAlt} className="w-12 h-12 rounded-full hover:scale-110 transition-transform duration-300" />
+          <div className="text-2xl font-bold text-green-600">EcoSim</div>
+          <div className="hidden md:flex items-center space-x-6">
+            <a
+              href="index.html"
+              className="bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-700 transition-all duration-300 shadow-md"
+              aria-label={t.navbar.home}
+            >
+              {t.navbar.home}
+            </a>
+            <select
+              value={language}
+              onChange={handleLanguageChange}
+              className="p-2 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 text-gray-700"
+              aria-label="Dil seç"
+            >
+              <option value="tr">Türkçe</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+          <button
+            className="md:hidden"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label={t.navbar.menuToggle}
+          >
+            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
+            </svg>
+          </button>
+          {isMenuOpen && (
+            <div className="absolute top-16 left-0 w-full bg-white shadow-md md:hidden rounded-b-xl">
+              <a
+                href="index.html"
+                className="block px-6 py-3 text-lg hover:bg-green-50 transition-colors duration-200"
+              >
+                {t.navbar.home}
+              </a>
+              <div className="px-6 py-3">
+                <select
+                  value={language}
+                  onChange={handleLanguageChange}
+                  className="w-full p-2 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 text-gray-700"
+                  aria-label="Dil seç"
+                >
+                  <option value="tr">Türkçe</option>
+                  <option value="en">English</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </nav>
+      );
+    }
+    function OnboardingModal({ isOpen, onClose, onSubmit }) {
+  const [surveyData, setSurveyData] = React.useState({
+    age: '',
+    city: '',
+    habits: {
+      dailyShowerTime: '',
+      transportationType: '',
+      lightingType: '',
+    }
+  });
+
+  const handleSubmit = () => {
+    onSubmit(surveyData);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-lg animate-fadeIn">
+        <h2 className="text-2xl font-bold mb-4 text-green-700">Kişisel Bilgileriniz</h2>
+        <div className="space-y-4">
+          <input
+            type="number"
+            placeholder="Yaşınız"
+            className="w-full border p-2 rounded"
+            value={surveyData.age}
+            onChange={(e) => setSurveyData({...surveyData, age: e.target.value})}
+          />
+          <input
+            type="text"
+            placeholder="Yaşadığınız şehir"
+            className="w-full border p-2 rounded"
+            value={surveyData.city}
+            onChange={(e) => setSurveyData({...surveyData, city: e.target.value})}
+          />
+          <input
+            type="text"
+            placeholder="Günlük duş süresi (dakika)"
+            className="w-full border p-2 rounded"
+            value={surveyData.habits.dailyShowerTime}
+            onChange={(e) => setSurveyData({
+              ...surveyData, 
+              habits: {...surveyData.habits, dailyShowerTime: e.target.value}
+            })}
+          />
+          <select
+            className="w-full border p-2 rounded"
+            value={surveyData.habits.transportationType}
+            onChange={(e) => setSurveyData({
+              ...surveyData,
+              habits: {...surveyData.habits, transportationType: e.target.value}
+            })}
+          >
+            <option value="">Ulaşım türünüz</option>
+            <option value="Toplu Taşıma">Toplu Taşıma</option>
+            <option value="Özel Araç">Özel Araç</option>
+            <option value="Bisiklet/Yürüyüş">Bisiklet/Yürüyüş</option>
+          </select>
+          <select
+            className="w-full border p-2 rounded"
+            value={surveyData.habits.lightingType}
+            onChange={(e) => setSurveyData({
+              ...surveyData,
+              habits: {...surveyData.habits, lightingType: e.target.value}
+            })}
+          >
+            <option value="">Evde kullanılan aydınlatma</option>
+            <option value="Tasarruflu Ampul">Tasarruflu Ampul</option>
+            <option value="LED">LED</option>
+            <option value="Klasik Ampul">Klasik Ampul</option>
+          </select>
+        </div>
+        <div className="mt-6 flex justify-end space-x-4">
+          <button
+            className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            onClick={onClose}
+          >
+            İptal
+          </button>
+          <button
+            className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
+            onClick={handleSubmit}
+          >
+            Kaydet ve Devam Et
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+    // Auth Page Component
+    function AuthPage() {
+      const { t } = React.useContext(LanguageContext);
+      const [activeTab, setActiveTab] = React.useState("login");
+      const [loginData, setLoginData] = React.useState({ email: "", password: "" });
+      const [registerData, setRegisterData] = React.useState({ username: "", email: "", password: "" });
+      const [showSurvey, setShowSurvey] = React.useState(false);
+      const [tempUserData, setTempUserData] = React.useState(null);
+
+      const handleLoginChange = (e) => {
+        setLoginData({ ...loginData, [e.target.name]: e.target.value });
+      };
+
+      const handleRegisterChange = (e) => {
+        setRegisterData({ ...registerData, [e.target.name]: e.target.value });
+      };
+
+      const handleLoginSubmit = (e) => {
+        e.preventDefault();
+        
+        // Create fresh user data object with only essential info and reset all points
+        const userData = {
+          email: loginData.email,
+          name: loginData.email.split('@')[0],
+          // Reset all points and levels to initial values
+          points: 0,
+          ranking: 0,
+          carbonpoints: 0,
+          level: 1,
+          waterpoints: 0,
+          levelProgress: 0,
+          levelName: "Yeni Başlangıç",
+          energypoints: 0,
+          energyLevelProgress: 0,
+          energyLevelName: "Yeni Kullanıcı",
+          badges: [],
+          consumption: {
+            daily: { carbon: 0, electricity: 0, water: 0 },
+            weekly: { carbon: 0, electricity: 0, water: 0 },
+            monthly: { carbon: 0, electricity: 0, water: 0 }
+          },
+          carbonFootprint: [0, 0, 0, 0],
+          waterFootprint: [0, 0, 0, 0],
+          suggestions: [
+            { id: 1, text: "Toplu taşımayı haftada 2 gün daha fazla kullanın.", impact: "10 karbon puanı" },
+            { id: 2, text: "Enerji tasarruflu ampuller kullanın.", impact: "15 enerji puanı" },
+            { id: 3, text: "Kısa duş süreleri ile su tüketiminizi azaltın.", impact: "20 su puanı" }
+          ]
+        };
+        setTempUserData(userData);
+        setShowSurvey(true); // Anketi aç
+      };
+
+      const handleRegisterSubmit = (e) => {
+        e.preventDefault();
+        
+        // Create fresh user data object with only essential info and reset all points
+        const userData = {
+          email: registerData.email,
+          name: registerData.username,
+          // Reset all points and levels to initial values
+          points: 0,
+          ranking: 0,
+          carbonpoints: 0,
+          level: 1,
+          waterpoints: 0,
+          levelProgress: 0,
+          levelName: "Yeni Başlangıç",
+          energypoints: 0,
+          energyLevelProgress: 0,
+          energyLevelName: "Yeni Kullanıcı",
+          badges: [],
+          consumption: {
+            daily: { carbon: 0, electricity: 0, water: 0 },
+            weekly: { carbon: 0, electricity: 0, water: 0 },
+            monthly: { carbon: 0, electricity: 0, water: 0 }
+          },
+          carbonFootprint: [0, 0, 0, 0],
+          waterFootprint: [0, 0, 0, 0],
+          suggestions: [
+            { id: 1, text: "Toplu taşımayı haftada 2 gün daha fazla kullanın.", impact: "10 karbon puanı" },
+            { id: 2, text: "Enerji tasarruflu ampuller kullanın.", impact: "15 enerji puanı" },
+            { id: 3, text: "Kısa duş süreleri ile su tüketiminizi azaltın.", impact: "20 su puanı" }
+          ]
+        };
+        setTempUserData(userData);
+        setShowSurvey(true); // Anketi aç
+      };
+
+      const handleSurveySubmit = (surveyData) => {
+        // Anket cevaplarını user objesine ekle ve kaydet
+        const finalUserData = {
+          ...tempUserData,
+          age: surveyData.age,
+          city: surveyData.city,
+          habits: {
+            ...surveyData.habits
+          }
+        };
+        localStorage.setItem("ecoSimUser", JSON.stringify(finalUserData));
+        setShowSurvey(false);
+        alert(
+          activeTab === "register"
+            ? t.auth.registerSuccess(finalUserData.name, finalUserData.email)
+            : t.auth.loginSuccess(finalUserData.email)
+        );
+        window.location.href = "profile.html";
+      };
+
+      return (
+        <>
+          <section className="py-16 px-6 max-w-md mx-auto bg-white rounded-xl shadow-md">
+            <h2 className="text-3xl font-bold mb-8 text-center text-green-800">
+              {activeTab === "login" ? t.auth.loginTab : t.auth.registerTab}
+            </h2>
+            <div className="flex justify-center mb-6">
+              <button
+                onClick={() => setActiveTab("login")}
+                className={`px-6 py-2 text-lg font-semibold rounded-l-full transition-all duration-300 ${
+                  activeTab === "login"
+                    ? "bg-green-600 text-white"
+                    : "bg-green-100 text-green-700 hover:bg-green-200"
+                }`}
+              >
+                {t.auth.loginTab}
+              </button>
+              <button
+                onClick={() => setActiveTab("register")}
+                className={`px-6 py-2 text-lg font-semibold rounded-r-full transition-all duration-300 ${
+                  activeTab === "register"
+                    ? "bg-green-600 text-white"
+                    : "bg-green-100 text-green-700 hover:bg-green-200"
+                }`}
+              >
+                {t.auth.registerTab}
+              </button>
+            </div>
+            {activeTab === "login" ? (
+              <form onSubmit={handleLoginSubmit} className="grid grid-cols-1 gap-6">
+                <div>
+                  <label className="block mb-2 font-semibold text-gray-700">{t.auth.emailLabel}</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={loginData.email}
+                    onChange={handleLoginChange}
+                    className="w-full p-3 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                    placeholder={t.auth.emailPlaceholder}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-2 font-semibold text-gray-700">{t.auth.passwordLabel}</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={loginData.password}
+                    onChange={handleLoginChange}
+                    className="w-full p-3 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                    placeholder={t.auth.passwordPlaceholder}
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="bg-green-600 text-white px-8 py-3 rounded-full hover:bg-green-700 transition-all duration-300 shadow-md"
+                >
+                  {t.auth.loginButton}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleRegisterSubmit} className="grid grid-cols-1 gap-6">
+                <div>
+                  <label className="block mb-2 font-semibold text-gray-700">{t.auth.usernameLabel}</label>
+                  <input
+                    type="text"
+                    name="username"
+                    value={registerData.username}
+                    onChange={handleRegisterChange}
+                    className="w-full p-3 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                    placeholder={t.auth.usernamePlaceholder}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-2 font-semibold text-gray-700">{t.auth.emailLabel}</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={registerData.email}
+                    onChange={handleRegisterChange}
+                    className="w-full p-3 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                    placeholder={t.auth.emailPlaceholder}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block mb-2 font-semibold text-gray-700">{t.auth.passwordLabel}</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={registerData.password}
+                    onChange={handleRegisterChange}
+                    className="w-full p-3 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                    placeholder={t.auth.passwordPlaceholder}
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="bg-green-600 text-white px-8 py-3 rounded-full hover:bg-green-700 transition-all duration-300 shadow-md"
+                >
+                  {t.auth.registerButton}
+                </button>
+              </form>
+            )}
+            <p className="text-center mt-6 text-gray-600">
+              {activeTab === "login" ? (
+                <>
+                  {t.auth.noAccount}{" "}
+                  <button
+                    onClick={() => setActiveTab("register")}
+                    className="text-green-600 hover:text-green-700 font-semibold"
+                  >
+                    {t.auth.switchToRegister}
+                  </button>
+                </>
+              ) : (
+                <>
+                  {t.auth.hasAccount}{" "}
+                  <button
+                    onClick={() => setActiveTab("login")}
+                    className="text-green-600 hover:text-green-700 font-semibold"
+                  >
+                    {t.auth.switchToLogin}
+                  </button>
+                </>
+              )}
+            </p>
+          </section>
+          <OnboardingModal
+            isOpen={showSurvey}
+            onClose={() => setShowSurvey(false)}
+            onSubmit={handleSurveySubmit}
+          />
+        </>
+      );
+    }
+
+    // Footer Component
+    function Footer() {
+      const { t } = React.useContext(LanguageContext);
+      return (
+        <footer className="bg-green-800 py-8 text-center text-white mt-10">
+          <p className="text-sm">{t.footer.copyright}</p>
+          <p className="mt-4">
+            <a href="#" className="text-green-200 hover:text-green-300 transition-colors duration-300">{t.footer.about}</a> |{" "}
+            <a href="#" className="text-green-200 hover:text-green-300 transition-colors duration-300">{t.footer.contact}</a>
+          </p>
+        </footer>
+      );
+    }
+
+    // Main App Component
+function App() {
+  const [language, setLanguage] = React.useState(localStorage.getItem("ecoSimLanguage") || "tr");
+  const [showOnboarding, setShowOnboarding] = React.useState(false);
+  const t = translations[language];
+
+  React.useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("ecoSimUser"));
+    if (user && !user.age) {
+      setShowOnboarding(true);
+    }
+  }, []);
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    window.location.href = "profile.html";
+  };
+
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+      <div>
+        <Navbar />
+        <AuthPage />
+        <Footer />
+        <OnboardingModal
+          isOpen={showOnboarding}
+          onClose={() => setShowOnboarding(false)}
+          onSubmit={handleOnboardingComplete}
+        />
+      </div>
+    </LanguageContext.Provider>
+  );
+}
+
+
+    // Custom Tailwind Animation
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            poppins: ["Poppins", "sans-serif"],
+          },
+        },
+      },
+    };
+
+    // Render App
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>

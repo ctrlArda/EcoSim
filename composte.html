@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Evsel Atık Rehberi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    select {
+      transition: all 0.3s ease;
+    }
+    select:hover {
+      background-color: #f1f5f9;
+    }
+    button {
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    button:hover {
+      background-color: #0d6916;
+      transform: translateY(-2px);
+    }
+    .suggestions {
+      display: none;
+    }
+    .suggestions.active {
+      display: block;
+    }
+  </style>
+  <script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+  <!-- Navbar -->
+  <nav class="bg-white shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center">
+          <a href="profile.html" class="flex items-center">
+            <img src="logo.jpg" alt="Logo" class="w-12 h-12 rounded-full" />
+            <span class="text-2xl font-bold text-green-600 ml-2">EcoSim</span>
+          </a>
+        </div>
+        <div class="flex items-center space-x-4">
+          <a href="profile.html" class="text-gray-600 hover:text-green-600">Profil</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Hero Section -->
+    <section class="text-center mb-12">
+      <h2 class="text-3xl font-semibold text-gray-900">Evsel Atık Rehberi</h2>
+      <p class="mt-4 text-lg text-gray-600">Evsel atıklarınızı geri dönüştürün, çevreye katkıda bulunun!</p>
+    </section>
+
+    <!-- Recycling Suggestions -->
+    <section class="bg-white rounded-lg shadow-lg p-8">
+      <h3 class="text-xl font-semibold text-gray-800 mb-6">Geri Dönüşüm Önerileri</h3>
+      <p class="text-gray-600 mb-4">Elinizdeki atık malzemeyi seçin, size özel yaratıcı ve çevre dostu geri dönüşüm fikirleri sunalım!</p>
+      
+      <div class="mt-6">
+        <label for="waste-type" class="block text-sm font-medium text-gray-700 mb-2">Atık Türü Seçin:</label>
+        <select id="waste-type" class="block w-full sm:w-1/2 border border-gray-300 rounded-md p-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          <option value="">Seçiniz</option>
+          <option value="plastic">Plastik</option>
+          <option value="glass">Cam</option>
+          <option value="paper">Kâğıt/Karton</option>
+          <option value="metal">Metal</option>
+          <option value="organic">Organik Atık</option>
+          <option value="electronic">Elektronik Atık</option>
+          <option value="textile">Tekstil</option>
+          <option value="wood">Ahşap</option>
+          <option value="used_oil">Kullanılmış Yemeklik Yağ</option>
+          <option value="plastic_bag">Plastik Poşet</option>
+          <option value="foam">Strafor/Köpük</option>
+        </select>
+      </div>
+
+      <button onclick="showSuggestions()" class="mt-6 bg-green-600 text-white font-medium py-3 px-6 rounded-md shadow-md">Önerileri Göster</button>
+
+      <div id="suggestions" class="suggestions mt-8">
+        <ul id="suggestion-list" class="space-y-6">
+          <!-- Suggestions will be inserted here -->
+        </ul>
+      </div>
+    </section>
+  </main>
+
+
+
+  <script>
+    const suggestionsData = {
+      plastic: [
+        {
+          title: "Plastik Şişeden Saksı",
+          materials: "PET şişe, makas, akrilik boya, ip, delici alet (matkap veya çivi)",
+          instructions: "1. PET şişeyi temizleyin ve etiketlerini çıkarın. 2. Şişenin üst üçte birini makasla kesin. 3. Keskin kenarları zımparalayın (isteğe bağlı, güvenlik için). 4. Şişenin dışını akrilik boyayla boyayın veya dekoratif ip sarın. 5. Altına 2-3 küçük delik açın (drenaj için çivi veya matkap kullanın). 6. İçine toprak ve fide ekleyerek saksı olarak kullanın.",
+          benefit: "Cam balkon, pencere önü veya çocuklar için mini bahçe oluşturur. Plastik atık azaltılır, yeni saksı alımı için maliyet tasarrufu sağlar.",
+          note: "Boyama yaparken su bazlı boyalar kullanın, çevre dostu olsun."
+        },
+        {
+          title: "Plastik Şişe ile Sulama Sistemi",
+          materials: "1-2 litrelik PET şişe, çivi veya iğne, su",
+          instructions: "1. Şişeyi ve kapağını iyice temizleyin. 2. Kapağa 3-5 küçük delik açın (iğne veya ince çivi ile). 3. Şişeyi suyla doldurun ve kapağı sıkıca kapatın. 4. Şişeyi baş aşağı bitkinin toprağına gömün, kapağın toprakla temas ettiğinden emin olun. 5. Su, deliklerden yavaşça toprağa sızacaktır.",
+          benefit: "Tatilde bitki sulama için pratik bir çözüm. Su israfını önler ve bitkilerin düzenli sulanmasını sağlar.",
+          note: "Deliklerin çok büyük olmamasına dikkat edin, yoksa su hızlı akar."
+        },
+        {
+          title: "Kapaklardan Mozaik Tablo",
+          materials: "Renkli şişe kapakları, sıcak silikon tabancası, mukavva veya ahşap taban, ip",
+          instructions: "1. Mukavva veya ahşap tabana istediğiniz deseni çizin (ör. kalp, çiçek, harf). 2. Kapakları renklerine göre ayırın. 3. Sıcak silikonla kapakları desene uygun şekilde tabana yapıştırın. 4. Kurumasını bekleyin (15-20 dakika). 5. Arkasına ip veya askı ekleyerek duvara asın.",
+          benefit: "Okul panoları, sınıf süslemeleri veya ev dekorasyonu için yaratıcı. Plastik kapaklar çöpe gitmek yerine sanata dönüşür.",
+          note: "Çocuklarla yaparken sıcak silikon kullanımında dikkatli olun."
+        },
+        {
+          title: "Plastik Şişeden Kuş Yemliği",
+          materials: "PET şişe, 2 tahta kaşık, ip, makas, kuş yemi",
+          instructions: "1. Şişeyi temizleyin. 2. Şişenin orta kısmında, karşılıklı iki delik açın (kaşıkların geçeceği büyüklükte). 3. İkinci bir delik çiftini 5 cm yukarıda açın. 4. Tahta kaşıkları deliklerden geçirerek yem platformu oluşturun. 5. Şişeyi kuş yemiyle doldurun. 6. Ağız kısmına ip bağlayarak ağaca asın.",
+          benefit: "Bahçede kuşları beslemek için çevre dostu bir çözüm. Çocuklara doğa sevgisi aşılar.",
+          note: "Yemliği düzenli olarak temizleyin ve taze yem ekleyin."
+        },
+        {
+          title: "Plastik Şişeden Depolama Kabı",
+          materials: "PET şişe, makas, fermuar, yapıştırıcı",
+          instructions: "1. İki PET şişenin üst kısmını kesin (yaklaşık 10 cm). 2. Keskin kenarları zımparalayın. 3. İki şişe ağzını bir fermuarla birleştirin (sıcak silikon veya güçlü yapıştırıcı kullanın). 4. Fermuarı kapatarak kalem, bozuk para veya küçük eşyalar için kap olarak kullanın.",
+          benefit: "Küçük eşyaları düzenli tutar, çanta veya masa için pratik bir çözüm. Plastik atık azaltılır.",
+          note: "Fermuarın sağlam olduğundan emin olun."
+        }
+      ],
+      glass: [
+        {
+          title: "Cam Kavanozdan Mumluk",
+          materials: "Cam kavanoz, mum veya LED ışık, ip, cam boyası, deniz kabuğu veya taşlar",
+          instructions: "1. Kavanozu iyice temizleyin ve etiketleri çıkarın. 2. Dışını cam boyasıyla boyayın veya desen çizin (ör. şablon kullanabilirsiniz). 3. Kurumasını bekleyin (2-3 saat). 4. Kavanozun içine küçük bir mum veya LED ışık yerleştirin. 5. Ağız kısmına ip veya kurdele sarın, isteğe göre deniz kabuğu veya taşlarla süsleyin.",
+          benefit: "Loş ışık sevenler için masa üstü süsü veya balkon aydınlatması. Cam atıklar değerlendirilir, dekorasyon maliyeti düşer.",
+          note: "Gerçek mum kullanıyorsanız, kavanozun ısıya dayanıklı olduğundan emin olun."
+        },
+        {
+          title: "Baharatlık Seti",
+          materials: "Küçük cam kavanozlar, etiket, sprey boya, kalem",
+          instructions: "1. Kavanozları ve kapaklarını temizleyin. 2. Kapakları sprey boyayla tek renk boyayın (ör. mat siyah veya beyaz). 3. Kurumasını bekleyin (4-6 saat). 4. Kavanozlara baharatları doldurun. 5. Etiketlere baharat isimlerini yazın (tuz, kekik, pul biber vb.) ve kavanozlara yapıştırın. 6. Raflara düzenli bir şekilde dizin.",
+          benefit: "Mutfakta şık ve düzenli bir baharat saklama çözümü. Yeni kap alımı için maliyet tasarrufu sağlar.",
+          note: "Boyama için iyi havalandırılan bir alan kullanın."
+        },
+        {
+          title: "Cam Şişeden Vazo",
+          materials: "Cam şişe, akrilik boya, kurdele, fırça",
+          instructions: "1. Şişeyi temizleyin ve etiketleri çıkarın. 2. Dışını akrilik boyayla boyayın (ör. pastel tonlar) veya şablonla desen yapın. 3. Kurumasını bekleyin (2-3 saat). 4. Şişenin ağız kısmına kurdele veya ip sarın. 5. İçine su ve çiçek koyarak vazo olarak kullanın.",
+          benefit: "Ev dekorasyonu için zarif ve ekonomik bir vazo. Cam atıklar çöpe gitmez.",
+          note: "Taze çiçekler için suyu düzenli değiştirin."
+        },
+        {
+          title: "Cam Kavanozdan Terraryum",
+          materials: "Büyük cam kavanoz, küçük bitkiler, taş, toprak, kömür",
+          instructions: "1. Kavanozu temizleyin. 2. Dibine ince bir tabaka kömür serpin (koku önler). 3. Üzerine 3-5 cm toprak ekleyin. 4. Küçük bitkiler (ör. sukulent) dikin. 5. Dekoratif taşlar veya minyatür objelerle süsleyin. 6. Kapağı açık tutarak masa üstüne yerleştirin.",
+          benefit: "Ev veya ofis için doğal bir dekor. Cam atıklar değerlendirilir, doğayla bağ kurulur.",
+          note: "Bitkilerin fazla sulanmamasına dikkat edin."
+        }
+      ],
+      paper: [
+        {
+          title: "Tuvalet Rulosundan Kalemlik",
+          materials: "3-4 tuvalet kağıdı rulosu, mukavva taban, yapıştırıcı, renkli kağıt, kalem",
+          instructions: "1. Ruloları temizleyin. 2. Mukavvadan yuvarlak veya kare bir taban kesin (ruloların sığacağı büyüklükte). 3. Ruloları tabana sıcak silikonla yapıştırın (dikey duracak şekilde). 4. Ruloların dışını renkli kağıt veya boyayla kaplayın, isteğe göre desen çizin. 5. Kurumasını bekleyin ve kalem, fırça gibi eşyaları yerleştirin.",
+          benefit: "Çocuk masası veya ofis için eğlenceli ve renkli kalemlik. Kâğıt atıklar değerlendirilir.",
+          note: "Ruloların sağlam yapıştırıldığından emin olun."
+        },
+        {
+          title: "Karton Kutu ile Kablo Düzenleyici",
+          materials: "Ayakkabı kutusu, tuvalet kağıdı ruloları, makas, etiket, yapıştırıcı",
+          instructions: "1. Kutunun içini temizleyin. 2. Ruloları kutunun içine sığacak şekilde kesin (ör. 5 cm yüksekliğinde). 3. Ruloları kutunun içine sıcak silikonla yapıştırın. 4. Her ruloya bir kablo veya şarj aleti yerleştirin. 5. Ruloların üstüne etiket yapıştırarak kabloları isimlendirin (ör. telefon, kulaklık).",
+          benefit: "Dağınık kabloları düzenler, evde düzeni artırır. Karton atıklar çöpe gitmez.",
+          note: "Kutunun sağlam olduğundan emin olun, gerekirse içini güçlendirin."
+        },
+        {
+          title: "Gazete Kâğıdından Sepet",
+          materials: "Gazete kâğıdı, yapıştırıcı, vernik, makas",
+          instructions: "1. Gazeteyi 5 cm genişliğinde şeritler halinde kesin. 2. Şeritleri rulo yaparak ince çubuklar oluşturun (yapıştırıcıyla sabitleyin). 3. Çubukları örerek sepet şekli verin (ör. kare veya yuvarlak taban). 4. Kenarları yapıştırıcıyla sabitleyin. 5. Sepeti vernikle kaplayarak dayanıklı hale getirin (2 kat uygulayın).",
+          benefit: "Dayanıklı ve dekoratif depolama çözümü. Gazete atıkları değerlendirilir, plastik sepetlere alternatif olur.",
+          note: "Örme işlemi zaman alabilir, sabırlı olun."
+        },
+        {
+          title: "Karton Parçalardan Duvar Sanatı",
+          materials: "Karton kutu, boya, makas, yapıştırıcı, çerçeve (isteğe bağlı)",
+          instructions: "1. Kartonu farklı şekillerde kesin (ör. yıldız, yaprak, geometrik şekiller). 2. Parçaları akrilik boyayla boyayın (farklı renkler kullanın). 3. Parçaları bir tablo gibi düzenleyin ve sıcak silikonla bir tabana yapıştırın. 4. İsteğe göre bir çerçeveye yerleştirin veya doğrudan duvara asın.",
+          benefit: "Ev dekorasyonu için ekonomik ve yaratıcı sanat eseri. Karton atıklar sanata dönüşür.",
+          note: "Boyama için su bazlı boyalar tercih edin."
+        },
+        {
+          title: "Kâğıt Atıklardan Tohum Topları",
+          materials: "Eski kâğıt, su, tohum, blender",
+          instructions: "1. Eski kâğıtları küçük parçalara ayırın ve suda 1 saat bekletin. 2. Kâğıtları blenderda hamur haline getirin. 3. Hamura çiçek veya sebze tohumları ekleyin. 4. Hamurdan küçük toplar yapın ve kurumaya bırakın (1-2 gün). 5. Topları bahçeye veya saksıya atın, sulayın, tohumlar filizlenecek.",
+          benefit: "Bahçe veya yeşil alanlar için çevre dostu bir çözüm. Kâğıt atıklar doğaya kazandırılır.",
+          note: "Yerel bitki tohumları kullanın, çevreye uygun olsun."
+        }
+      ],
+      metal: [
+        {
+          title: "Teneke Kutudan Baharatlık veya Saksı",
+          materials: "Konserve kutusu, boya, mıknatıs, yapıştırıcı, zımpara",
+          instructions: "1. Konserve kutusunu temizleyin ve etiketleri çıkarın. 2. Keskin kenarları zımparalayın (güvenlik için). 3. Dışını akrilik veya sprey boyayla boyayın, kurumasını bekleyin. 4. İsteğe göre mıknatıs yapıştırarak buzdolabına tutturun. 5. Baharat veya küçük bitkiler için kullanın (saksı için altına drenaj delikleri açın).",
+          benefit: "Mutfakta alan kazandırır, şık bir saklama çözümü. Metal atıklar değerlendirilir.",
+          note: "Keskin kenarlarla çalışırken eldiven kullanın."
+        },
+        {
+          title: "Metal Kapaklardan Rüzgar Çanı",
+          materials: "Konserve kapakları, ip, ahşap veya metal çubuk, matkap veya çivi",
+          instructions: "1. Kapakları temizleyin. 2. Her kapağa küçük bir delik açın (matkap veya çivi ile). 3. Kapakları farklı uzunluklarda iplere bağlayın. 4. İpleri bir çubuğa asın, çubuğu sabitleyin. 5. Rüzgar çanını bahçeye veya balkona asın, rüzgarda çınlar.",
+          benefit: "Bahçe veya balkon için dekoratif ve sesli süs. Metal atıklar sanatsal bir ürüne dönüşür.",
+          note: "Kapakların paslanmaması için vernikle kaplayabilirsiniz."
+        },
+        {
+          title: "Teneke Kutudan Fener",
+          materials: "Konserve kutusu, çivi, tel, mum, boya",
+          instructions: "1. Kutuyu temizleyin ve etiketleri çıkarın. 2. Çiviyle kutunun yanlarına desenli delikler açın (ör. yıldız, kalp). 3. İsteğe göre dışını boyayın. 4. Üst kısmına tel geçirerek sap yapın. 5. İçine küçük bir mum veya LED ışık yerleştirin, asarak kullanın.",
+          benefit: "Bahçe veya balkon için rustik bir aydınlatma. Metal atıklar dekorasyona katkı sağlar.",
+          note: "Mum kullanıyorsanız, kutunun ısıya dayanıklı olduğundan emin olun."
+        }
+      ],
+      organic: [
+        {
+          title: "Organik Atıktan Kompost",
+          materials: "Sebze/meyve kabukları, kahve telvesi, kuru yaprak veya karton, kap, karıştırma çubuğu",
+          instructions: "1. Plastik veya ahşap bir kap seçin (altında delikler olsun). 2. Organik atıkları (kabuklar, kahve telvesi) ince parçalara ayırın. 3. Kaba bir katman atık, bir katman karbon kaynağı (kuru yaprak, rendelenmiş karton) ekleyin. 4. Nemli tutun (ıslak sünger kıvamı). 5. Haftada bir karıştırın, hava alsın. 6. 2-3 ayda kompost hazır, bahçede veya saksıda kullanın.",
+          benefit: "Bahçe için doğal gübre, atık azaltımı sağlar. Toprak verimliliğini artırır, kimyasal gübre kullanımını azaltır.",
+          note: "Et, süt ürünleri veya yağlı gıdalar eklemeyin, kötü koku ve haşere çekebilir."
+        },
+        {
+          title: "Yumurta Kabuğundan Gübre",
+          materials: "Yumurta kabukları, blender, kap",
+          instructions: "1. Yumurta kabuklarını iyice yıkayın ve kurutun (fırında 100°C’de 10 dakika). 2. Kabukları blenderda toz haline getirin. 3. Tozu bir kaba alın. 4. Bitki toprağına serpin veya sulama suyuna karıştırın (1 litre suya 1 çay kaşığı). 5. Haftada bir uygulayın.",
+          benefit: "Kalsiyum açısından zengin, bitki büyümesini destekler. Organik atıklar çöpe gitmez.",
+          note: "Tozu ince çekmeye özen gösterin, toprağa daha iyi karışır."
+        },
+        {
+          title: "Muz Kabuğundan Bitki Besini",
+          materials: "Muz kabuğu, su, kap",
+          instructions: "1. Muz kabuklarını küçük parçalara ayırın. 2. Bir kapta 1 litre suya 2-3 muz kabuğu ekleyin. 3. 1-2 gün bekletin, ara sıra karıştırın. 4. Suyu süzün ve bitkileri sulamak için kullanın. 5. Kabukları komposta ekleyin.",
+          benefit: "Potasyum açısından zengin, özellikle çiçekli bitkiler için ideal. Organik atıklar değerlendirilir.",
+          note: "Suyu 3-4 gün içinde kullanın, yoksa kokabilir."
+        },
+        {
+          title: "Kahve Telvesinden Peeling",
+          materials: "Kahve telvesi, zeytinyağı, küçük kavanoz",
+          instructions: "1. Kullanılmış kahve telvesini kurutun (güneşte veya fırında düşük ısıda). 2. 2 yemek kaşığı telveye 1 yemek kaşığı zeytinyağı ekleyin. 3. Karışımı bir kavanoza koyun. 4. Duşta cilt peelingi olarak kullanın, ardından durulayın.",
+          benefit: "Doğal ve çevre dostu cilt bakım ürünü. Kahve atıkları çöpe gitmez, plastik ambalajlı ürünlere alternatif olur.",
+          note: "Hassas ciltler için önce küçük bir alanda test edin."
+        }
+      ],
+      electronic: [
+        {
+          title: "Eski CD’lerden Dekoratif Ayna",
+          materials: "Eski CD/DVD, yapıştırıcı, yuvarlak taban (karton veya ahşap), makas",
+          instructions: "1. CD’leri küçük parçalara kesin (makas veya kesici aletle, dikkatli olun). 2. Yuvarlak bir taban hazırlayın (ör. 30 cm çapında karton). 3. CD parçalarını mozaik gibi tabana yapıştırın, boşluk kalmamasına dikkat edin. 4. Kurumasını bekleyin (1-2 saat). 5. Duvara asın veya dekor olarak kullanın.",
+          benefit: "Ev dekorasyonu için parlak ve modern bir ayna. Elektronik atıklar sanata dönüşür.",
+          note: "Kesme işlemi sırasında eldiven kullanın, CD’ler kırılabilir."
+        },
+        {
+          title: "Klavye Tuşlarından İsimlik",
+          materials: "Eski klavye tuşları, yapıştırıcı, karton, çerçeve (isteğe bağlı)",
+          instructions: "1. Eski klavyeden tuşları dikkatlice çıkarın. 2. Karton üzerine bir isim veya desen çizin. 3. Tuşları sıcak silikonla kartona yapıştırarak deseni oluşturun. 4. Kurumasını bekleyin. 5. İsteğe göre çerçeveye yerleştirin veya masa üstüne koyun.",
+          benefit: "Kişiselleştirilmiş masa süsü veya hediye. Elektronik atıklar yeniden kullanılır.",
+          note: "Tuşları çıkarmak için tornavida kullanabilirsiniz."
+        },
+        {
+          title: "Eski Kablolardan Takı Organizer",
+          materials: "Eski USB veya şarj kabloları, ahşap tahta, kanca, yapıştırıcı",
+          instructions: "1. Kabloları düzgünce sarın veya örün (estetik bir görünüm için). 2. Ahşap tahtaya küçük kancalar vidalayın. 3. Kabloları dekoratif olarak tahtaya yapıştırın veya kancalara asın. 4. Kolye, bilezik gibi takıları kancalara asarak kullanın.",
+          benefit: "Takılarınızı düzenli tutar, elektronik atıklar dekorasyona katkı sağlar.",
+          note: "Kabloların çalışmadığından emin olun, güvenlik için."
+        }
+      ],
+      textile: [
+        {
+          title: "Eski Kıyafetten Bez Çanta",
+          materials: "Eski tişört, makas, iğne, iplik",
+          instructions: "1. Tişörtü düz bir yüzeye serin. 2. Kollarını ve yaka kısmını kesin, saplar oluşacak. 3. Tişörtün altını dikin (makine veya elle). 4. İsteğe göre dışını kumaş boyasıyla süsleyin. 5. Yıkayın ve alışveriş çantası olarak kullanın.",
+          benefit: "Alışveriş için çevre dostu çanta, plastik poşet kullanımını azaltır. Tekstil atıkları değerlendirilir.",
+          note: "Pamuklu tişörtler daha dayanıklı olur."
+        },
+        {
+          title: "Kumaş Parçalarından Yastık Kılıfı",
+          materials: "Eski kıyafet, iğne, iplik, makas, yastık",
+          instructions: "1. Kumaşı yastık boyutunda kesin (ör. 50x50 cm, dikiş payı bırakın). 2. İki kumaş parçasını ters çevirip üç kenarını dikin. 4. Dikişi bitirdikten sonra kumaşı çevirin, yastığı içine yerleştirin. 5. Açık kenarı elle dikin veya fermuar ekleyin.",
+          benefit: "Ev dekorasyonu için ekonomik ve şık yastık kılıfı. Tekstil atıkları yeniden kullanılır.",
+          note: "Dikiş bilmiyorsanız, kumaş yapıştırıcısı da kullanabilirsiniz."
+        },
+        {
+          title: "Kot Parçalardan Organizer",
+          materials: "Eski kot pantolon, makas, yapıştırıcı, karton",
+          instructions: "1. Kot pantolonun ceplerini ve kumaş parçalarını kesin. 2. Karton veya ahşap bir taban hazırlayın. 3. Cepleri ve kumaş parçalarını tabana sıcak silikonla yapıştırın, bölmeler oluşturun. 4. Kalem, makyaj malzemesi veya küçük eşyaları saklamak için kullanın.",
+          benefit: "Masada düzen sağlar, dayanıklı ve şık. Kot atıkları çöpe gitmez.",
+          note: "Ceplerin sağlam olduğundan emin olun."
+        },
+        {
+          title: "Eski Havlulardan Banyo Paspası",
+          materials: "Eski havlu, makas, iğne, iplik",
+          instructions: "1. Havluyu 5 cm genişliğinde şeritler halinde kesin. 2. Şeritleri üçlü gruplar halinde örün (saç örgüsü gibi). 3. Örgüleri spiral şeklinde sararak paspas formu verin, her turu dikin. 4. Altına kaymaz bir kumaş yapıştırın (isteğe bağlı).",
+          benefit: "Banyoda çevre dostu ve yumuşak bir paspas. Tekstil atıkları değerlendirilir.",
+          note: "Kalın havlular daha dayanıklı olur."
+        }
+      ],
+      wood: [
+        {
+          title: "Ahşap Paletten Raf",
+          materials: "Eski palet, zımpara, boya, vida, matkap",
+          instructions: "1. Paleti temizleyin, çivileri kontrol edin. 2. Yüzeyini zımparalayın, pürüzsüz hale getirin. 3. İsteğe göre akrilik veya ahşap boyasıyla boyayın, kurumasını bekleyin. 4. Paleti duvara vidalayın veya yatay olarak raf şeklinde monte edin. 5. Kitap, saksı veya dekor eşyaları yerleştirin.",
+          benefit: "Ev veya bahçe için rustik depolama alanı. Ahşap atıklar değerlendirilir, mobilya maliyeti düşer.",
+          note: "Paletin sağlam olduğundan emin olun, gerekirse güçlendirin."
+        },
+        {
+          title: "Küçük Ahşap Kutudan Baharat Rafı",
+          materials: "Eski ahşap kutu, boya, yapıştırıcı, zımpara",
+          instructions: "1. Kutuyu temizleyin ve zımparalayın. 2. İsteğe göre içini bölmelerle ayırın (ahşap veya karton şeritler kullanın). 3. Dışını boyayın veya vernikle kaplayın. 4. Baharat kavanozlarını yerleştirin, duvara asın veya mutfak tezgahına koyun.",
+          benefit: "Mutfakta kompakt ve şık düzen. Ahşap atıklar yeniden kullanılır.",
+          note: "Kutunun nemli ortamlarda kullanılacaksa su geçirmez vernik kullanın."
+        },
+        {
+          title: "Ahşap Parçalardan Anahtarlık",
+          materials: "Küçük ahşap parçalar, matkap, ip, boya",
+          instructions: "1. Ahşap parçaları zımparalayın, istenen şekle getirin (ör. kare, yuvarlak). 2. Her parçaya küçük bir delik açın (matkapla). 3. Parçaları boyayın veya vernikle kaplayın. 4. İpten halka yapın, anahtarları asmak için delikten geçirin. 5. Duvara veya girişe asın.",
+          benefit: "Anahtarları düzenli tutar, evde şık bir dekor. Ahşap atıklar değerlendirilir.",
+          note: "Küçük parçalarla çalışırken dikkatli olun."
+        }
+      ],
+      used_oil: [
+        {
+          title: "Kullanılmış Yağdan Sabun",
+          materials: "Kullanılmış yemeklik yağ, kostik soda, su, esansiyel yağ, kalıp",
+          instructions: "1. Yağı süzerek temizleyin (tülbent kullanın). 2. 100 g yağa 13 g kostik soda ve 30 ml su oranını hesaplayın. 3. Kostik sodayı suya yavaşça ekleyin (asla tersini yapmayın), karışımı soğutun. 4. Soğuyan karışımı yağa ekleyin, blenderla koyulaşana kadar karıştırın. 5. Esansiyel yağ ekleyin, kalıba dökün, 24 saat bekletin. 6. Sabunu kalıptan çıkarın, 4-6 hafta kürlenmeye bırakın.",
+          benefit: "Doğal ve çevre dostu sabun, kimyasal ürünlere alternatif. Yağ atıkları çevreye zarar vermez.",
+          note: "Kostik soda ile çalışırken eldiven ve maske kullanın, iyi havalandırılan bir alanda çalışın."
+        },
+        {
+          title: "Yağdan Mum",
+          materials: "Kullanılmış yemeklik yağ, mum fitili, kap, esansiyel yağ",
+          instructions: "1. Yağı süzerek temizleyin. 2. Bir kavanoz veya metal kaba yağı dökün. 3. Ortasına mum fitilini yerleştirin (fitilin dibini yapıştırıcıyla sabitleyin). 4. İsteğe göre birkaç damla esansiyel yağ ekleyin (koku için). 5. Yağı ısıtın (düşük ateşte), fitilin etrafında sertleşmesini bekleyin.",
+          benefit: "Evde doğal mum, elektrik kesintileri için pratik. Yağ atıkları değerlendirilir.",
+          note: "Fitilin sabit durması için dikkatli olun."
+        }
+      ],
+      plastic_bag: [
+        {
+          title: "Plastik Poşetten İp",
+          materials: "Plastik poşetler, makas",
+          instructions: "1. Poşetleri düzleştirin ve kenarlarını kesin. 2. Poşeti 2-3 cm genişliğinde şeritler halinde kesin. 3. Şeritleri birbirine düğümleyerek uzun bir ip oluşturun. 4. İpi örerek veya sararak sepet, paspas veya çanta yapımında kullanın.",
+          benefit: "Plastik poşetler çöpe gitmez, dayanıklı iplerle yaratıcı projeler yapılır.",
+          note: "Farklı renkli poşetler kullanarak daha estetik sonuçlar elde edebilirsiniz."
+        },
+        {
+          title: "Plastik Poşetten Örgü Paspas",
+          materials: "Plastik poşetler, makas, tığ",
+          instructions: "1. Poşetlerden ip hazırlayın (yukarıdaki yöntemle). 2. İpi tığ ile örerek yuvarlak veya kare paspas yapın (ör. sık iğne tekniği). 3. Örgüyü tamamlayın, uçlarını düğümle sabitleyin. 4. Banyo veya giriş için paspas olarak kullanın.",
+          benefit: "Dayanıklı ve su geçirmez paspas, plastik poşet atıkları azaltır.",
+          note: "Örme bilmiyorsanız, YouTube’dan basit tığ işi videoları izleyebilirsiniz."
+        }
+      ],
+      foam: [
+        {
+          title: "Strafordan Yalıtım Paneli",
+          materials: "Strafor parçaları, yapıştırıcı, karton",
+          instructions: "1. Strafor parçalarını temizleyin. 2. Parçaları bir karton tabana yapıştırın, boşluk kalmamasına dikkat edin. 3. İkinci bir kartonla üstünü kaplayın, kenarları bantlayın. 4. Paneli pencere veya kapı kenarlarına yerleştirerek yalıtım sağlayın.",
+          benefit: "Evde enerji tasarrufu sağlar, strafor atıkları değerlendirilir.",
+          note: "Straforu keserken dikkatli olun, küçük parçacıklar dağılabilir."
+        },
+        {
+          title: "Strafordan Çocuk Oyuncağı",
+          materials: "Strafor parçaları, boya, yapıştırıcı, pipet, kürdan",
+          instructions: "1. Straforu istenen şekillerde kesin (ör. araba, ev). 2. Parçaları kürdan veya yapıştırıcıyla birleştirin. 3. Akrilik boyayla boyayın, pipet veya küçük objelerle detay ekleyin. 4. Çocuklar için oyuncak olarak kullanın.",
+          benefit: "Çocuklar için yaratıcı ve güvenli oyuncak, strafor atıkları çöpe gitmez.",
+          note: "Küçük çocuklar için keskin objeler kullanmayın."
+        }
+      ]
+    };
+
+    function showSuggestions() {
+      const wasteType = document.getElementById("waste-type").value;
+      const suggestionList = document.getElementById("suggestion-list");
+      const suggestionsDiv = document.getElementById("suggestions");
+      suggestionList.innerHTML = "";
+
+      if (wasteType && suggestionsData[wasteType]) {
+        suggestionsData[wasteType].forEach(suggestion => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <div class="bg-gray-50 rounded-lg p-6 shadow-sm">
+              <h4 class="text-xl font-semibold text-green-600 mb-4">${suggestion.title}</h4>
+              <div class="space-y-3">
+                <p class="text-gray-700"><span class="font-medium">Malzemeler:</span> ${suggestion.materials}</p>
+                <p class="text-gray-700"><span class="font-medium">Nasıl Yapılır:</span> ${suggestion.instructions}</p>
+                <p class="text-gray-700"><span class="font-medium">Fayda:</span> ${suggestion.benefit}</p>
+                <p class="text-gray-600 italic"><span class="font-medium">Not:</span> ${suggestion.note}</p>
+              </div>
+            </div>
+          `;
+          suggestionList.appendChild(li);
+        });
+        suggestionsDiv.classList.add("active");
+      } else {
+        suggestionList.innerHTML = `
+          <li class="text-center text-gray-600 py-4">
+            Lütfen bir atık türü seçin!
+          </li>
+        `;
+        suggestionsDiv.classList.add("active");
+      }
+    }
+
+    // Sayfa yüklendiğinde localStorage'daki dili uygula
+    (function() {
+      var lang = localStorage.getItem("language") || "tr";
+      document.documentElement.lang = lang;
+      var langSelect = document.querySelector('select[name="language"], select#language, select');
+      if (langSelect) {
+        langSelect.value = lang;
+        langSelect.addEventListener("change", function(e) {
+          localStorage.setItem("language", e.target.value);
+          document.documentElement.lang = e.target.value;
+          location.reload();
+        });
+      }
+    })();
+  </script>
+  <div id="draggable-video" style="position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%); z-index: 50; cursor: move;">
+    <video src="videotwo.mp4" width="320" controls></video>
+  </div>
+  <script>
+    // Basit sürükle-bırak fonksiyonu
+    (function() {
+      const dragDiv = document.getElementById('draggable-video');
+      let isDragging = false, startX, startY, startLeft, startTop;
+
+      dragDiv.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        // Pozisyonu px cinsinden al
+        const rect = dragDiv.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        dragDiv.style.transition = "none";
+        // transform'u sıfırla, left/top'u px olarak ayarla
+        dragDiv.style.left = startLeft + "px";
+        dragDiv.style.top = startTop + "px";
+        dragDiv.style.bottom = "auto";
+        dragDiv.style.transform = "none";
+        dragDiv.style.position = "fixed";
+      });
+
+      document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        let dx = e.clientX - startX;
+        let dy = e.clientY - startY;
+        dragDiv.style.left = (startLeft + dx) + "px";
+        dragDiv.style.top = (startTop + dy) + "px";
+      });
+
+      document.addEventListener('mouseup', function() {
+        isDragging = false;
+      });
+    })();
+  </script>
+</body>
+</html>

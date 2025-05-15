@@ -1,0 +1,768 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emanet: Atanın Eşyası</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .navbar {
+            background-color: #333;
+            padding: 15px;
+            text-align: center;
+        }
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 20px;
+            font-size: 18px;
+        }
+        .navbar a:hover {
+            text-decoration: underline;
+        }
+        .hero {
+            text-align: center;
+            padding: 50px 20px;
+            background-color: #e8ecef;
+        }
+        .hero h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+        .hero p {
+            font-size: 18px;
+            margin-bottom: 30px;
+        }
+        .btn {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn.delete {
+            background-color: #dc3545;
+        }
+        .btn.delete:hover {
+            background-color: #c82333;
+        }
+        .section {
+            padding: 40px 20px;
+        }
+        .section h2 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .card {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .features {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .feature-card {
+            flex: 1;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .artisan-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .artisan-card {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .artisan-card h4 {
+            margin: 10px 0;
+            font-size: 20px;
+        }
+        .artisan-card p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .form-group small {
+            color: #666;
+            font-size: 12px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+        }
+        .modal-content h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .modal-content p {
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .close {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .archive-filter {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .archive-filter select {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        .archive-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .archive-item {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .archive-item h4 {
+            margin: 10px 0;
+            font-size: 18px;
+        }
+        .archive-item p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .archive-item img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #333;
+            color: white;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="#about">Hakkında</a>
+        <a href="#features">Özellikler</a>
+        <a href="profile.html">Profil</a>
+    </nav>
+
+    <section class="hero">
+        <h1>Dededen Kalma Eşyalar Yeniden Hayat Buluyor</h1>
+        <p>Emanet, kültürel mirası dijitalde koruyor, geri dönüştürüyor ve nesiller arası bağ kuruyor.</p>
+        <a href="#demo" class="btn">Şimdi Keşfet</a>
+    </section>
+
+    <section id="about" class="section">
+        <div class="container">
+            <h2>Emanet Nedir?</h2>
+            <div class="card">
+                <p>Emanet, unutulmuş ama değerli eşyaları (dede yadigârı bakır sini, ceviz sandık, eski saat...) çöpe gitmekten kurtaran bir platform. Eşyalarınızı restore ettirin, hikayelerini paylaşın ve dijital “Ata Sandığı Arşivi”nde sonsuza dek saklayın.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="section">
+        <div class="container">
+            <h2>Özellikler</h2>
+            <div class="features">
+                <div class="feature-card">
+                    <h3>Eşya Yükleme</h3>
+                    <p>Fotoğraf, hikâye ve zanaat türünü yükleyin, eşyanız yolculuğuna başlasın.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Emanetçi Eşleşmesi</h3>
+                    <p>Zanaatkârlarla eşleşin, eşyanız usta ellerde yenilensin.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Dijital Arşiv</h3>
+                    <p>Eşyanızın hikayesi ve yenilenmiş hali dijitalde kaydedilsin.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="demo" class="section">
+        <div class="container">
+            <h2>Prototip Arayüz</h2>
+            <div class="card">
+                <h3>Eşya Yükle</h3>
+                <form id="item-upload-form">
+                    <div class="form-group">
+                        <label for="item-name">Eşya Adı</label>
+                        <input type="text" id="item-name" required minlength="3">
+                        <small>Eşya adı en az 3 karakter olmalı.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="craft-type">Zanaat Türü</label>
+                        <select id="craft-type" required>
+                            <option value="Bakır İşleme">Bakır İşleme</option>
+                            <option value="Ahşap Oymacılığı">Ahşap Oymacılığı</option>
+                            <option value="Tekstil Dokuma">Tekstil Dokuma</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="item-photo">Fotoğraf Yükle</label>
+                        <input type="file" id="item-photo" accept="image/*" required>
+                        <small>Lütfen bir fotoğraf seçin.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="item-story">Hikâyesi</label>
+                        <textarea id="item-story" required minlength="10"></textarea>
+                        <small>Hikâye en az 10 karakter olmalı.</small>
+                    </div>
+                    <button type="submit" class="btn">Emanet Et</button>
+                </form>
+                <p id="success-message" style="display: none; color: green;">Eşya başarıyla yüklendi!</p>
+            </div>
+
+            <div class="card">
+                <h3>Emanetçi Profilleri</h3>
+                <div class="artisan-list">
+                    <!-- Bakır İşleme -->
+                    <div class="artisan-card">
+                        <div class="artisan-info">
+                            <h4>Ayşe Usta</h4>
+                            <p><strong>Zanaat:</strong> Bakır İşleme</p>
+                            <p><strong>Konum:</strong> İstanbul</p>
+                            <p>20 yıllık deneyimle bakır eşyaları restore eder.</p>
+                            <button class="btn artisan-request-btn" data-artisan="Ayşe Usta" data-craft="Bakır İşleme">Eşleşme Talebi Gönder</button>
+                        </div>
+                    </div>
+                    <div class="artisan-card">
+                        <div class="artisan-info">
+                            <h4>Hasan Usta</h4>
+                            <p><strong>Zanaat:</strong> Bakır İşleme</p>
+                            <p><strong>Konum:</strong> Gaziantep</p>
+                            <p>15 yıllık bakır işleme sanatıyla eşyalara hayat verir.</p>
+                            <button class="btn artisan-request-btn" data-artisan="Hasan Usta" data-craft="Bakır İşleme">Eşleşme Talebi Gönder</button>
+                        </div>
+                    </div>
+                    <div class="artisan-card">
+                        <div class="artisan-info">
+                            <h4>Elif Usta</h4>
+                            <p><strong>Zanaat:</strong> Bakır İşleme</p>
+                            <p><strong>Konum:</strong> Trabzon</p>
+                            <p>Geleneksel yöntemlerle bakır eşyaları yeniler.</p>
+                            <button class="btn artisan-request-btn" data-artisan="Elif Usta" data-craft="Bakır İşleme">Eşleşme Talebi Gönder</button>
+                        </div>
+                    </div>
+                    <!-- Ahşap Oymacılığı -->
+                    <div class="artisan-card">
+                        <div class="artisan-info">
+                            <h4>Mehmet Usta</h4>
+                            <p><strong>Zanaat:</strong> Ahşap Oymacılığı</p>
+                            <p><strong>Konum:</strong> Ankara</p>
+                            <p>Ahşap eşyaları oyma sanatıyla yeniler.</p>
+                            <button class="btn artisan-request-btn" data-artisan="Mehmet Usta" data-craft="Ahşap Oymacılığı">Eşleşme Talebi Gönder</button>
+                        </div>
+                    </div>
+                    <div class="artisan-card">
+                        <div class="artisan-info">
+                            <h4>Ali Usta</h4>
+                            <p><strong>Zanaat:</strong> Ahşap Oymacılığı</p>
+                            <p><strong>Konum:</strong> Bursa</p>
+                            <p>25 yıllık tecrübeyle ahşap eşyalara sanat katar.</p>
+                            <button class="btn artisan-request-btn" data-artisan="Ali Usta" data-craft="Ahşap Oymacılığı">Eşleşme Talebi Gönder</button>
+                        </div>
+                    </div>
+                    <div class="artisan-card">
+                        <div class="artisan-info">
+                            <h4>Zeynep Usta</h4>
+                            <p><strong>Zanaat:</strong> Ahşap Oymacılığı</p>
+                            <p><strong>Konum:</strong> Konya</p>
+                            <p>Ahşap oyma sanatını modern tekniklerle buluşturur.</p>
+                            <button class="btn artisan-request-btn" data-artisan="Zeynep Usta" data-craft="Ahşap Oymacılığı">Eşleşme Talebi Gönder</button>
+                        </div>
+                    </div>
+                    <!-- Tekstil Dokuma -->
+                    <div class="artisan-card">
+                        <div class="artisan-info">
+                            <h4>Fatma Usta</h4>
+                            <p><strong>Zanaat:</strong> Tekstil Dokuma</p>
+                            <p><strong>Konum:</strong> İzmir</p>
+                            <p>Tekstil ürünlerini dokuma teknikleriyle restore eder.</p>
+                            <button class="btn artisan-request-btn" data-artisan="Fatma Usta" data-craft="Tekstil Dokuma">Eşleşme Talebi Gönder</button>
+                        </div>
+                    </div>
+                    <div class="artisan-card">
+                        <div class="artisan-info">
+                            <h4>Hüseyin Usta</h4>
+                            <p><strong>Zanaat:</strong> Tekstil Dokuma</p>
+                            <p><strong>Konum:</strong> Denizli</p>
+                            <p>Geleneksel dokuma sanatıyla tekstil eşyaları yeniler.</p>
+                            <button class="btn artisan-request-btn" data-artisan="Hüseyin Usta" data-craft="Tekstil Dokuma">Eşleşme Talebi Gönder</button>
+                        </div>
+                    </div>
+                    <div class="artisan-card">
+                        <div class="artisan-info">
+                            <h4>Emine Usta</h4>
+                            <p><strong>Zanaat:</strong> Tekstil Dokuma</p>
+                            <p><strong>Konum:</strong> Şanlıurfa</p>
+                            <p>El dokuması teknikleriyle kültürel mirası korur.</p>
+                            <button class="btn artisan-request-btn" data-artisan="Emine Usta" data-craft="Tekstil Dokuma">Eşleşme Talebi Gönder</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Dijital Ata Sandığı Arşivi</h3>
+                <div class="archive-filter">
+                    <select id="archive-filter">
+                        <option value="all">Tüm Eşyalar</option>
+                        <option value="Bakır İşleme">Bakır Eşyalar</option>
+                        <option value="Ahşap Oymacılığı">Ahşap Eşyalar</option>
+                        <option value="Tekstil Dokuma">Tekstil Eşyalar</option>
+                    </select>
+                </div>
+                <div class="archive-items" id="archive-items">
+                    <!-- Items will be dynamically added here -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="artisan-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">×</span>
+            <h2>Emanetçi Eşleşme Talebi</h2>
+            <form id="artisan-request-form">
+                <div class="form-group">
+                    <label for="request-item">Eşya Adı</label>
+                    <input type="text" id="request-item" required>
+                </div>
+                <div class="form-group">
+                    <label for="request-craft-type">Zanaat Türü</label>
+                    <select id="request-craft-type" required>
+                        <option value="Bakır İşleme">Bakır İşleme</option>
+                        <option value="Ahşap Oymacılığı">Ahşap Oymacılığı</option>
+                        <option value="Tekstil Dokuma">Tekstil Dokuma</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="artisan-name">Emanetçi</label>
+                    <input type="text" id="artisan-name" readonly>
+                </div>
+                <button type="submit" class="btn">Talep Gönder</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="response-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">×</span>
+            <h2>Emanetçi Yanıtı</h2>
+            <p id="artisan-response"></p>
+            <button class="btn" onclick="document.getElementById('response-modal').classList.remove('active')">Kapat</button>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">×</span>
+            <h2>Eşya Düzenle</h2>
+            <form id="edit-item-form">
+                <input type="hidden" id="edit-item-index">
+                <div class="form-group">
+                    <label for="edit-item-name">Eşya Adı</label>
+                    <input type="text" id="edit-item-name" required minlength="3">
+                    <small>Eşya adı en az 3 karakter olmalı.</small>
+                </div>
+                <div class="form-group">
+                    <label for="edit-craft-type">Zanaat Türü</label>
+                    <select id="edit-craft-type" required>
+                        <option value="Bakır İşleme">Bakır İşleme</option>
+                        <option value="Ahşap Oymacılığı">Ahşap Oymacılığı</option>
+                        <option value="Tekstil Dokuma">Tekstil Dokuma</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit-item-photo">Fotoğraf Yükle (opsiyonel)</label>
+                    <input type="file" id="edit-item-photo" accept="image/*">
+                </div>
+                <div class="form-group">
+                    <label for="edit-item-story">Hikâyesi</label>
+                    <textarea id="edit-item-story" required minlength="10"></textarea>
+                    <small>Hikâye en az 10 karakter olmalı.</small>
+                </div>
+                <button type="submit" class="btn">Kaydet</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2025 Emanet: Atanın Eşyası. Hackathon için hazırlanmıştır.</p>
+        <p>Kültürel mirası geri dönüştürelim, emanetlere sahip çıkalım.</p>
+    </footer>
+
+    <script>
+        // Log to confirm script execution
+        console.log('Emanet script loaded at', new Date().toISOString());
+
+        // Load items from localStorage or initialize empty array
+        let archivedItems = JSON.parse(localStorage.getItem('archivedItems')) || [];
+
+        // Function to save items to localStorage
+        function saveItems() {
+            console.log('Saving items to localStorage:', archivedItems.length);
+            localStorage.setItem('archivedItems', JSON.stringify(archivedItems));
+        }
+
+        // Function to generate realistic artisan response
+        function generateArtisanResponse(itemName, craftType, artisanName) {
+            console.log('Generating response for:', itemName, craftType, artisanName);
+            let response = `Merhaba, ${itemName} adlı eşyanız için talebinizi aldım. `;
+            switch (craftType) {
+                case 'Bakır İşleme':
+                    response += `Bakır eşyalar konusunda uzmanım. ${itemName} için yüzey temizliği ve geleneksel kalaylama teknikleri uygulayabilirim. Restorasyon yaklaşık 5-7 gün sürecektir. Çevre dostu yöntemlerle eşyanızı yeniden kullanılabilir hale getireceğiz.`;
+                    break;
+                case 'Ahşap Oymacılığı':
+                    response += `Ahşap oymacılığı benim alanım. ${itemName} için öncelikle ahşabın durumunu inceleyeceğim. Çatlaklar varsa doğal reçine ile doldurup, zımparalama ve vernikle tamamlayabilirim. İşlem 7-10 gün alabilir. Bu sayede eşyanız hem dayanıklı hem de estetik olacak.`;
+                    break;
+                case 'Tekstil Dokuma':
+                    response += `Tekstil dokuma konusunda deneyimliyim. ${itemName} için kumaşın dokusunu ve yıpranma durumunu değerlendireceğim. Geleneksel el dokuma teknikleriyle onarım yapabilir, gerekirse doğal ipliklerle güçlendirebilirim. Restorasyon 4-6 gün sürecektir.`;
+                    break;
+                default:
+                    response += `Eşyanızı değerlendirdikten sonra uygun restorasyon yöntemlerini belirleyeceğim. Size en kısa sürede detaylı bilgi vereceğim.`;
+            }
+            response += ` Size en kısa sürede eşyanızı teslim etmek için çalışacağım. Saygılarımla, ${artisanName}`;
+            return response;
+        }
+
+        // Function to render items in the archive
+        function renderArchiveItems(filter = 'all') {
+            console.log('Rendering archive with filter:', filter);
+            const archiveContainer = document.getElementById('archive-items');
+            archiveContainer.innerHTML = ''; // Clear existing items
+
+            const filteredItems = filter === 'all' 
+                ? archivedItems 
+                : archivedItems.filter(item => item.craftType === filter);
+
+            filteredItems.forEach((item, index) => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'archive-item';
+                itemElement.innerHTML = `
+                    <h4>${item.name}</h4>
+                    <p><strong>Zanaat:</strong> ${item.craftType}</p>
+                    <img src="${item.photoData}" alt="${item.name}" />
+                    <p><strong>Hikâye:</strong> ${item.story}</p>
+                    <button class="btn edit-item-btn" data-index="${index}">Düzenle</button>
+                    <button class="btn delete delete-item-btn" data-index="${index}">Sil</button>
+                `;
+                archiveContainer.appendChild(itemElement);
+            });
+
+            // Add event listeners for edit and delete buttons
+            document.querySelectorAll('.edit-item-btn').forEach(button => {
+                button.addEventListener('click', handleEditItem);
+            });
+            document.querySelectorAll('.delete-item-btn').forEach(button => {
+                button.addEventListener('click', handleDeleteItem);
+            });
+        }
+
+        // Handle "Emanet Et" form submission
+        document.getElementById('item-upload-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            console.log('Item upload form submitted');
+            
+            // Get form values
+            const itemName = document.getElementById('item-name').value;
+            const craftType = document.getElementById('craft-type').value;
+            const itemPhoto = document.getElementById('item-photo').files[0];
+            const itemStory = document.getElementById('item-story').value;
+
+            if (itemName && craftType && itemPhoto && itemStory) {
+                // Read image file
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    console.log('Image loaded, adding item:', itemName);
+                    // Create item object
+                    const item = {
+                        name: itemName,
+                        craftType: craftType,
+                        photoData: e.target.result,
+                        story: itemStory
+                    };
+
+                    // Add to archived items
+                    archivedItems.push(item);
+                    saveItems();
+
+                    // Render items in archive
+                    renderArchiveItems();
+
+                    // Show success message
+                    document.getElementById('success-message').style.display = 'block';
+                    
+                    // Reset form
+                    document.getElementById('item-upload-form').reset();
+                    
+                    // Hide success message after 3 seconds
+                    setTimeout(() => {
+                        document.getElementById('success-message').style.display = 'none';
+                    }, 3000);
+                };
+                reader.readAsDataURL(itemPhoto);
+            }
+        });
+
+        // Handle archive filter
+        document.getElementById('archive-filter').addEventListener('change', function() {
+            console.log('Archive filter changed to:', this.value);
+            renderArchiveItems(this.value);
+        });
+
+        // Handle edit item
+        function handleEditItem(event) {
+            console.log('Edit button clicked for index:', event.target.getAttribute('data-index'));
+            const index = event.target.getAttribute('data-index');
+            const item = archivedItems[index];
+
+            // Prefill edit form
+            document.getElementById('edit-item-index').value = index;
+            document.getElementById('edit-item-name').value = item.name;
+            document.getElementById('edit-craft-type').value = item.craftType;
+            document.getElementById('edit-item-story').value = item.story;
+
+            // Show edit modal
+            document.getElementById('edit-modal').classList.add('active');
+        }
+
+        // Handle edit form submission
+        document.getElementById('edit-item-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            console.log('Edit form submitted for index:', document.getElementById('edit-item-index').value);
+
+            const index = document.getElementById('edit-item-index').value;
+            const itemName = document.getElementById('edit-item-name').value;
+            const craftType = document.getElementById('edit-craft-type').value;
+            const itemPhoto = document.getElementById('edit-item-photo').files[0];
+            const itemStory = document.getElementById('edit-item-story').value;
+
+            if (itemName && craftType && itemStory) {
+                if (itemPhoto) {
+                    // Read new image file
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        console.log('New image loaded, updating item:', itemName);
+                        archivedItems[index] = {
+                            name: itemName,
+                            craftType: craftType,
+                            photoData: e.target.result,
+                            story: itemStory
+                        };
+                        saveItems();
+                        renderArchiveItems();
+                        document.getElementById('edit-modal').classList.remove('active');
+                        document.getElementById('edit-item-form').reset();
+                    };
+                    reader.readAsDataURL(itemPhoto);
+                } else {
+                    // Update without changing photo
+                    console.log('Updating item without new photo:', itemName);
+                    archivedItems[index] = {
+                        name: itemName,
+                        craftType: craftType,
+                        photoData: archivedItems[index].photoData,
+                        story: itemStory
+                    };
+                    saveItems();
+                    renderArchiveItems();
+                    document.getElementById('edit-modal').classList.remove('active');
+                    document.getElementById('edit-item-form').reset();
+                }
+            }
+        });
+
+        // Handle delete item
+        function handleDeleteItem(event) {
+            console.log('Delete button clicked for index:', event.target.getAttribute('data-index'));
+            const index = event.target.getAttribute('data-index');
+            if (confirm('Bu eşyayı silmek istediğinizden emin misiniz?')) {
+                archivedItems.splice(index, 1);
+                saveItems();
+                renderArchiveItems();
+            }
+        }
+
+        // Handle "Eşleşme Talebi Gönder" buttons
+        const requestButtons = document.querySelectorAll('.artisan-request-btn');
+        const artisanModal = document.getElementById('artisan-modal');
+        const responseModal = document.getElementById('response-modal');
+        const artisanNameInput = document.getElementById('artisan-name');
+        const responseText = document.getElementById('artisan-response');
+        const closeModal = document.querySelectorAll('.close');
+
+        requestButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                console.log('Request button clicked for artisan:', this.getAttribute('data-artisan'));
+                const artisanName = this.getAttribute('data-artisan');
+                const craftType = this.getAttribute('data-craft');
+                artisanNameInput.value = artisanName;
+                document.getElementById('request-craft-type').value = craftType; // Prefill craft type
+                artisanModal.classList.add('active');
+            });
+        });
+
+        // Close modal when clicking the close button
+        closeModal.forEach(close => {
+            close.addEventListener('click', function() {
+                console.log('Closing modal');
+                artisanModal.classList.remove('active');
+                responseModal.classList.remove('active');
+                document.getElementById('edit-modal').classList.remove('active');
+            });
+        });
+
+        // Close modal when clicking outside
+        artisanModal.addEventListener('click', function(event) {
+            if (event.target === artisanModal) {
+                console.log('Closing artisan modal via click outside');
+                artisanModal.classList.remove('active');
+            }
+        });
+        responseModal.addEventListener('click', function(event) {
+            if (event.target === responseModal) {
+                console.log('Closing response modal via click outside');
+                responseModal.classList.remove('active');
+            }
+        });
+        document.getElementById('edit-modal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                console.log('Closing edit modal via click outside');
+                this.classList.remove('active');
+            }
+        });
+
+        // Handle artisan request form submission
+        document.getElementById('artisan-request-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            console.log('Artisan request form submitted');
+            const itemName = document.getElementById('request-item').value;
+            const craftType = document.getElementById('request-craft-type').value;
+            const artisanName = artisanNameInput.value;
+
+            if (itemName && craftType && artisanName) {
+                // Generate and display artisan response
+                const response = generateArtisanResponse(itemName, craftType, artisanName);
+                responseText.textContent = response;
+                artisanModal.classList.remove('active');
+                responseModal.classList.add('active');
+                this.reset();
+            }
+        });
+
+        // Initial render of archived items
+        console.log('Initial render of archived items');
+        renderArchiveItems();
+    </script>
+</body>
+</html>
