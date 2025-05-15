@@ -453,7 +453,7 @@
     (function() {
       var lang = localStorage.getItem("language") || "tr";
       document.documentElement.lang = lang;
-      var langSelect = document.querySelector('select[name="language"], select#language, select');
+      var langSelect = document.querySelector('select#language'); // Restrict to id="language"
       if (langSelect) {
         langSelect.value = lang;
         langSelect.addEventListener("change", function(e) {
@@ -462,45 +462,6 @@
           location.reload();
         });
       }
-    })();
-  </script>
-  <div id="draggable-video" style="position: fixed; left: 50%; bottom: 32px; transform: translateX(-50%); z-index: 50; cursor: move;">
-    <video src="videotwo.mp4" width="320" controls></video>
-  </div>
-  <script>
-    // Basit sürükle-bırak fonksiyonu
-    (function() {
-      const dragDiv = document.getElementById('draggable-video');
-      let isDragging = false, startX, startY, startLeft, startTop;
-
-      dragDiv.addEventListener('mousedown', function(e) {
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        // Pozisyonu px cinsinden al
-        const rect = dragDiv.getBoundingClientRect();
-        startLeft = rect.left;
-        startTop = rect.top;
-        dragDiv.style.transition = "none";
-        // transform'u sıfırla, left/top'u px olarak ayarla
-        dragDiv.style.left = startLeft + "px";
-        dragDiv.style.top = startTop + "px";
-        dragDiv.style.bottom = "auto";
-        dragDiv.style.transform = "none";
-        dragDiv.style.position = "fixed";
-      });
-
-      document.addEventListener('mousemove', function(e) {
-        if (!isDragging) return;
-        let dx = e.clientX - startX;
-        let dy = e.clientY - startY;
-        dragDiv.style.left = (startLeft + dx) + "px";
-        dragDiv.style.top = (startTop + dy) + "px";
-      });
-
-      document.addEventListener('mouseup', function() {
-        isDragging = false;
-      });
     })();
   </script>
 </body>
